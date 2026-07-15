@@ -5,7 +5,8 @@ import '../profile/profile_screen.dart';
 import '../challenges/challenges_screen.dart';
 import '../observations/my_observations_screen.dart';
 import '../observations/new_observation_screen.dart';
-
+import '../../services/api_service.dart';
+import '../auth/login_screen.dart';
 
 class HomeScreen extends StatelessWidget {
 const HomeScreen({super.key});
@@ -21,8 +22,9 @@ drawer: Drawer(
     children: [
 
       UserAccountsDrawerHeader(
-        accountName: const Text(
-          "João Silva",
+       accountName: Text(
+          ApiService.currentUser?['name'] ??
+            'Utilizador',
         ),
 
         accountEmail: const Text(
@@ -141,7 +143,20 @@ drawer: Drawer(
           ),
         ),
 
-        onTap: () {},
+        onTap: () async {
+          await ApiService.logout();
+
+          if (!context.mounted) return;
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) =>
+                  const LoginScreen(),
+            ),
+            (route) => false,
+          );
+        },
       ),
     ],
   ),
@@ -290,11 +305,11 @@ bottomNavigationBar: BottomAppBar(
 
               const SizedBox(height: 40),
 
-              const Align(
+              Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
-                  "Olá, Observador!",
-                  style: TextStyle(
+                  "Olá, ${ApiService.currentUser?['name'] ?? 'Observador'}!",
+                  style: const TextStyle(
                     color: Colors.white70,
                     fontSize: 16,
                   ),

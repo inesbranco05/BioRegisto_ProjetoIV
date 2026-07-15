@@ -14,5 +14,15 @@ public class Observation
 
     public string Status { get; set; } = "Pending";
 
+    public string? ImageUrl { get; set; }
+
     public DateTime CreatedAt { get; set; }
+
+    public int? UserId { get; set; }
+
+    public User? User { get; set; }
+
+    public int? TaxonId { get; set; }
+
+    public Taxon? Taxon { get; set; }
 }

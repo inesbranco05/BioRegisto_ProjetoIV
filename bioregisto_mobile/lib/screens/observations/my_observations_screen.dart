@@ -1,8 +1,37 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
+import '../../services/api_service.dart';
 
-class MyObservationsScreen extends StatelessWidget {
+class MyObservationsScreen extends StatefulWidget {
   const MyObservationsScreen({super.key});
+
+  @override
+  State<MyObservationsScreen> createState() =>
+      _MyObservationsScreenState();
+}
+
+class _MyObservationsScreenState
+    extends State<MyObservationsScreen> {
+  late Future<List<dynamic>> _observationsFuture;
+
+  String _searchText = '';
+  String _selectedFilter = 'Todas';
+
+  @override
+  void initState() {
+    super.initState();
+    _observationsFuture = ApiService.getObservations();
+  }
+
+  bool _isVerified(dynamic observation) {
+    final status =
+        observation['status']?.toString().toLowerCase() ?? '';
+
+    return status == 'verified' ||
+        status == 'verificada' ||
+        status == 'approved' ||
+        status == 'aprovada';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,143 +52,289 @@ class MyObservationsScreen extends StatelessWidget {
         centerTitle: true,
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+      body: FutureBuilder<List<dynamic>>(
+        future: _observationsFuture,
 
-        child: Column(
-          children: [
+        builder: (context, snapshot) {
+          // LOADING
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
 
-            TextField(
-              decoration: InputDecoration(
-                hintText: "Pesquisar espécie...",
-
-                prefixIcon:
-                    const Icon(Icons.search),
-
-                filled: true,
-                fillColor: Colors.white,
-
-                border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(15),
-                ),
+          // ERRO
+          if (snapshot.hasError) {
+            return Center(
+              child: Text(
+                "Erro ao carregar observações:\n"
+                "${snapshot.error}",
+                textAlign: TextAlign.center,
               ),
-            ),
+            );
+          }
 
-            const SizedBox(height: 20),
+          final observations = snapshot.data ?? [];
 
-            Row(
+          // CONTAGENS
+          final verifiedCount =
+              observations.where(_isVerified).length;
+
+          final pendingCount =
+              observations.length - verifiedCount;
+
+          // ESPÉCIES DISTINTAS
+          final uniqueSpecies = observations
+              .map(
+                (observation) =>
+                    observation['scientificName']
+                        ?.toString()
+                        .trim()
+                        .toLowerCase(),
+              )
+              .where(
+                (name) =>
+                    name != null &&
+                    name.isNotEmpty,
+              )
+              .toSet()
+              .length;
+
+          // PESQUISA + FILTROS
+          final filteredObservations =
+              observations.where(
+            (observation) {
+              final commonName =
+                  observation['commonName']
+                          ?.toString()
+                          .toLowerCase() ??
+                      '';
+
+              final scientificName =
+                  observation['scientificName']
+                          ?.toString()
+                          .toLowerCase() ??
+                      '';
+
+              final search =
+                  _searchText.toLowerCase();
+
+              final matchesSearch =
+                  commonName.contains(search) ||
+                      scientificName.contains(search);
+
+              bool matchesFilter = true;
+
+              if (_selectedFilter ==
+                  'Verificadas') {
+                matchesFilter =
+                    _isVerified(observation);
+              }
+
+              if (_selectedFilter ==
+                  'Pendentes') {
+                matchesFilter =
+                    !_isVerified(observation);
+              }
+
+              return matchesSearch &&
+                  matchesFilter;
+            },
+          ).toList();
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+
+            child: Column(
               children: [
+                // PESQUISA
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _searchText = value;
+                    });
+                  },
 
-                _filterButton(
-                  "Todas (4)",
-                  true,
+                  decoration: InputDecoration(
+                    hintText:
+                        "Pesquisar espécie...",
+
+                    prefixIcon:
+                        const Icon(Icons.search),
+
+                    filled: true,
+                    fillColor: Colors.white,
+
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(15),
+                    ),
+                  ),
                 ),
 
-                const SizedBox(width: 10),
+                const SizedBox(height: 20),
 
-                _filterButton(
-                  "Verificadas (3)",
-                  false,
+                // FILTROS
+                Row(
+                  children: [
+                    _filterButton(
+                      "Todas",
+                      "Todas (${observations.length})",
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    _filterButton(
+                      "Verificadas",
+                      "Verificadas ($verifiedCount)",
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    _filterButton(
+                      "Pendentes",
+                      "Pendentes ($pendingCount)",
+                    ),
+                  ],
                 ),
 
-                const SizedBox(width: 10),
+                const SizedBox(height: 20),
 
-                _filterButton(
-                  "Pendentes (1)",
-                  false,
+                // ESTATÍSTICAS
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statCard(
+                        observations.length
+                            .toString(),
+                        "Total",
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: _statCard(
+                        uniqueSpecies.toString(),
+                        "Espécies",
+                      ),
+                    ),
+
+                    const SizedBox(width: 10),
+
+                    Expanded(
+                      child: _statCard(
+                        verifiedCount.toString(),
+                        "Verificadas",
+                      ),
+                    ),
+                  ],
                 ),
+
+                const SizedBox(height: 25),
+
+                // SEM RESULTADOS
+                if (filteredObservations.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.all(30),
+
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.search_off,
+                          size: 45,
+                          color: Colors.grey,
+                        ),
+
+                        SizedBox(height: 10),
+
+                        Text(
+                          "Nenhuma observação encontrada.",
+                          style: TextStyle(
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+
+                // LISTA
+                else
+                  ...filteredObservations.map(
+                    (observation) {
+                      return Padding(
+                        padding:
+                            const EdgeInsets.only(
+                          bottom: 15,
+                        ),
+
+                        child: _observationCard(
+                          observation['commonName'] ??
+                              'Sem nome comum',
+
+                          observation[
+                                  'scientificName'] ??
+                              'Espécie desconhecida',
+
+                          observation['status'] ??
+                              'Pending',
+
+                          observation['imageUrl'],
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
-
-            const SizedBox(height: 20),
-
-            Row(
-              children: [
-
-                Expanded(
-                  child: _statCard(
-                    "4",
-                    "Total",
-                  ),
-                ),
-
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: _statCard(
-                    "4",
-                    "Espécies",
-                  ),
-                ),
-
-                const SizedBox(width: 10),
-
-                Expanded(
-                  child: _statCard(
-                    "3",
-                    "Verificadas",
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 25),
-
-            _observationCard(
-              "Pardal-comum",
-              "Passer domesticus",
-              "Verificada",
-            ),
-
-            const SizedBox(height: 15),
-
-            _observationCard(
-              "Tentilhão-comum",
-              "Fringilla coelebs",
-              "Verificada",
-            ),
-
-            const SizedBox(height: 15),
-
-            _observationCard(
-              "Carvalho-alvarinho",
-              "Quercus robur",
-              "Verificada",
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   Widget _filterButton(
+    String filter,
     String text,
-    bool selected,
   ) {
+    final selected =
+        _selectedFilter == filter;
+
     return Expanded(
-      child: Container(
-        height: 40,
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _selectedFilter = filter;
+          });
+        },
 
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primary
-              : Colors.white,
+        child: AnimatedContainer(
+          duration:
+              const Duration(milliseconds: 200),
 
-          borderRadius:
-              BorderRadius.circular(10),
-        ),
+          height: 40,
 
-        child: Center(
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
+          decoration: BoxDecoration(
+            color: selected
+                ? AppColors.primary
+                : Colors.white,
 
-            style: TextStyle(
-              color: selected
-                  ? Colors.white
-                  : Colors.black87,
-              fontSize: 12,
+            borderRadius:
+                BorderRadius.circular(10),
+          ),
+
+          child: Center(
+            child: Text(
+              text,
+              textAlign: TextAlign.center,
+
+              style: TextStyle(
+                color: selected
+                    ? Colors.white
+                    : Colors.black87,
+
+                fontSize: 12,
+              ),
             ),
           ),
         ),
@@ -176,24 +351,28 @@ class MyObservationsScreen extends StatelessWidget {
 
       decoration: BoxDecoration(
         color: AppColors.primary,
+
         borderRadius:
             BorderRadius.circular(15),
       ),
 
       child: Column(
         children: [
-
           Text(
             value,
+
             style: const TextStyle(
               color: Colors.white,
               fontSize: 24,
-              fontWeight: FontWeight.bold,
+
+              fontWeight:
+                  FontWeight.bold,
             ),
           ),
 
           Text(
             label,
+
             style: const TextStyle(
               color: Colors.white,
             ),
@@ -207,32 +386,71 @@ class MyObservationsScreen extends StatelessWidget {
     String commonName,
     String scientificName,
     String status,
+    String? imageUrl,
   ) {
+    final isVerified =
+        status.toLowerCase() ==
+                'verified' ||
+            status.toLowerCase() ==
+                'verificada' ||
+            status.toLowerCase() ==
+                'approved' ||
+            status.toLowerCase() ==
+                'aprovada';
+
     return Container(
       padding: const EdgeInsets.all(15),
 
       decoration: BoxDecoration(
         color: Colors.white,
+
         borderRadius:
             BorderRadius.circular(20),
       ),
 
       child: Row(
         children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(15),
 
-          Container(
-            width: 70,
-            height: 70,
+            child: SizedBox(
+              width: 70,
+              height: 70,
 
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius:
-                  BorderRadius.circular(15),
-            ),
+              child: imageUrl != null &&
+                      imageUrl.isNotEmpty
+                  ? Image.network(
+                      '${ApiService.baseUrl.replaceFirst('/api', '')}$imageUrl',
 
-            child: const Icon(
-              Icons.image,
-              size: 35,
+                      width: 70,
+                      height: 70,
+                      fit: BoxFit.cover,
+
+                      errorBuilder: (
+                        context,
+                        error,
+                        stackTrace,
+                      ) {
+                        return Container(
+                          color: Colors.grey.shade300,
+
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            size: 35,
+                            color: Colors.grey,
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: Colors.grey.shade300,
+
+                      child: const Icon(
+                        Icons.image_outlined,
+                        size: 35,
+                        color: Colors.grey,
+                      ),
+                    ),
             ),
           ),
 
@@ -244,9 +462,9 @@ class MyObservationsScreen extends StatelessWidget {
                   CrossAxisAlignment.start,
 
               children: [
-
                 Text(
                   commonName,
+
                   style: const TextStyle(
                     fontWeight:
                         FontWeight.bold,
@@ -255,8 +473,10 @@ class MyObservationsScreen extends StatelessWidget {
 
                 Text(
                   scientificName,
+
                   style: const TextStyle(
                     color: Colors.grey,
+
                     fontStyle:
                         FontStyle.italic,
                   ),
@@ -265,9 +485,14 @@ class MyObservationsScreen extends StatelessWidget {
                 const SizedBox(height: 5),
 
                 Text(
-                  status,
-                  style: const TextStyle(
-                    color: Colors.green,
+                  isVerified
+                      ? "Verificada"
+                      : "Pendente",
+
+                  style: TextStyle(
+                    color: isVerified
+                        ? Colors.green
+                        : Colors.orange,
                   ),
                 ),
               ],

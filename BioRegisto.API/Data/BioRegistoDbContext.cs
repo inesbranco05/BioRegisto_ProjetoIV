@@ -13,4 +13,8 @@ public class BioRegistoDbContext : DbContext
 
     public DbSet<Observation> Observations =>
         Set<Observation>();
+
+    public DbSet<User> Users { get; set; }
+
+    public DbSet<Taxon> Taxa { get; set; }
 }

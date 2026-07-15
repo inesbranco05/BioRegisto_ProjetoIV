@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5e944d8bd243ab3bbd21ac3e3d447fe1ebea3340")]
 [assembly: System.Reflection.AssemblyProductAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -37,6 +37,9 @@ namespace BioRegisto.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
                     b.Property<double>("Latitude")
                         .HasColumnType("double precision");
 
@@ -51,9 +54,111 @@ namespace BioRegisto.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("TaxonId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("TaxonId");
+
+                    b.HasIndex("UserId");
+
                     b.ToTable("Observations");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.Taxon", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Rank")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.ToTable("Taxa");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.User", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.Observation", b =>
+                {
+                    b.HasOne("BioRegisto.API.Models.Taxon", "Taxon")
+                        .WithMany()
+                        .HasForeignKey("TaxonId");
+
+                    b.HasOne("BioRegisto.API.Models.User", "User")
+                        .WithMany("Observations")
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("Taxon");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.Taxon", b =>
+                {
+                    b.HasOne("BioRegisto.API.Models.Taxon", "Parent")
+                        .WithMany("Children")
+                        .HasForeignKey("ParentId");
+
+                    b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.Taxon", b =>
+                {
+                    b.Navigation("Children");
+                });
+
+            modelBuilder.Entity("BioRegisto.API.Models.User", b =>
+                {
+                    b.Navigation("Observations");
                 });
 #pragma warning restore 612, 618
         }

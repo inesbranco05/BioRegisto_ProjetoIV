@@ -1,21 +1,38 @@
 import 'package:flutter/material.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/observations/new_observation_screen.dart';
+import 'services/api_service.dart';
 
-void main() {
-  runApp(const BioRegistoApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final hasSession =
+      await ApiService.restoreSession();
+
+  runApp(
+    BioRegistoApp(
+      hasSession: hasSession,
+    ),
+  );
 }
 
 class BioRegistoApp extends StatelessWidget {
-  const BioRegistoApp({super.key});
+  final bool hasSession;
+
+  const BioRegistoApp({
+    super.key,
+    required this.hasSession,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'BioRegisto',
-      home: const HomeScreen(),
+
+      home: hasSession
+          ? const HomeScreen()
+          : const LoginScreen(),
     );
   }
 }
