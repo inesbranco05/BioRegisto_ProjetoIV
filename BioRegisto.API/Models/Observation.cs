@@ -25,4 +25,12 @@ public class Observation
     public int? TaxonId { get; set; }
 
     public Taxon? Taxon { get; set; }
+
+    public string? ValidationNotes { get; set; }
+
+    public string? RejectionReason { get; set; }
+
+    public int? ValidatedByUserId { get; set; }
+
+    public DateTime? ValidatedAt { get; set; }
 }

@@ -46,6 +46,9 @@ namespace BioRegisto.API.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
+                    b.Property<string>("RejectionReason")
+                        .HasColumnType("text");
+
                     b.Property<string>("ScientificName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -59,6 +62,15 @@ namespace BioRegisto.API.Migrations
 
                     b.Property<int?>("UserId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTime?>("ValidatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ValidatedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("ValidationNotes")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
