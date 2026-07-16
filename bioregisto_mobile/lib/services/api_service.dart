@@ -265,4 +265,29 @@ class ApiService {
 
     return true;
   }
+
+  // =========================
+  // NOTIFICAÇÕES
+  // =========================
+
+  static Future<List<dynamic>>
+    getNotifications() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/Notifications',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar notificações.',
+  );
+}
 }

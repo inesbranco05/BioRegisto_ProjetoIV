@@ -7,6 +7,7 @@ import '../observations/my_observations_screen.dart';
 import '../observations/new_observation_screen.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
+import '../notifications/notifications_screen.dart';
 
 class HomeScreen extends StatelessWidget {
 const HomeScreen({super.key});
@@ -296,9 +297,23 @@ bottomNavigationBar: BottomAppBar(
                     ),
                   ),
 
-                  Icon(
-                    Icons.notifications_none,
-                    color: Colors.white,
+                 IconButton(
+                    tooltip: 'Notificações',
+
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                    ),
+
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const NotificationsScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

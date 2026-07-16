@@ -118,6 +118,7 @@ public class AuthController : ControllerBase
                 .ToLower(),
 
             Role = "Observer",
+            IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -156,15 +157,25 @@ public class AuthController : ControllerBase
             );
 
         if (user == null)
-        {
-            return Unauthorized(new
-            {
-                message = "Email ou palavra-passe incorretos."
-            });
-        }
+{
+    return Unauthorized(new
+    {
+        message = "Email ou palavra-passe incorretos."
+    });
+}
 
-        var passwordHasher =
-            new PasswordHasher<User>();
+// Impedir o login de contas desativadas
+if (!user.IsActive)
+{
+    return Unauthorized(new
+    {
+        message =
+            "Esta conta encontra-se desativada."
+    });
+}
+
+var passwordHasher =
+    new PasswordHasher<User>();
 
         var result =
             passwordHasher.VerifyHashedPassword(

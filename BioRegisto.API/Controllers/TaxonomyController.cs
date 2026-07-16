@@ -32,6 +32,7 @@ public class TaxonomyController : ControllerBase
             {
                 t.Id,
                 t.Name,
+                t.CommonName,
                 t.Rank,
                 t.ParentId
             })
@@ -90,6 +91,7 @@ public class TaxonomyController : ControllerBase
             {
                 t.Id,
                 t.Name,
+                t.CommonName,
                 t.Rank,
                 t.ParentId
             })
@@ -204,6 +206,15 @@ if (expectedParentRank != null &&
 var taxon = new Taxon
 {
     Name = request.Name.Trim(),
+
+    CommonName =
+        request.Rank == "Species" &&
+        !string.IsNullOrWhiteSpace(
+            request.CommonName
+        )
+            ? request.CommonName.Trim()
+            : null,
+
     Rank = request.Rank,
     ParentId = request.ParentId
 };
@@ -216,9 +227,82 @@ var taxon = new Taxon
     {
         taxon.Id,
         taxon.Name,
+        taxon.CommonName,
         taxon.Rank,
         taxon.ParentId
     });
+}
+
+// GET api/Taxonomy/species
+[HttpGet("species")]
+public async Task<IActionResult> GetSpecies()
+{
+    var species = await _context.Taxa
+        .Where(t => t.Rank == "Species")
+        .OrderBy(t => t.Name)
+        .ToListAsync();
+
+    var result = new List<object>();
+
+    foreach (var item in species)
+    {
+        var hierarchy =
+            new Dictionary<string, string?>();
+
+        Taxon? current = item;
+
+        while (current != null)
+        {
+            hierarchy[current.Rank] =
+                current.Name;
+
+            if (current.ParentId == null)
+            {
+                break;
+            }
+
+            current =
+                await _context.Taxa.FindAsync(
+                    current.ParentId
+                );
+        }
+
+        result.Add(new
+        {
+            item.Id,
+             CommonName = item.CommonName,
+
+            Species = hierarchy.GetValueOrDefault(
+                "Species"
+            ),
+
+            Genus = hierarchy.GetValueOrDefault(
+                "Genus"
+            ),
+
+            Family = hierarchy.GetValueOrDefault(
+                "Family"
+            ),
+
+            Order = hierarchy.GetValueOrDefault(
+                "Order"
+            ),
+
+            Class = hierarchy.GetValueOrDefault(
+                "Class"
+            ),
+
+            Phylum = hierarchy.GetValueOrDefault(
+                "Phylum"
+            ),
+
+            Kingdom = hierarchy.GetValueOrDefault(
+                "Kingdom"
+            )
+        });
+    }
+
+    return Ok(result);
 }
 
 // PUT api/Taxonomy/{id}
@@ -252,12 +336,19 @@ public async Task<IActionResult> Update(
     taxon.Name =
         request.Name.Trim();
 
+    taxon.CommonName =
+        taxon.Rank == "Species" &&
+        !string.IsNullOrWhiteSpace(request.CommonName)
+            ? request.CommonName.Trim()
+            : null;
+
     await _context.SaveChangesAsync();
 
     return Ok(new
     {
         taxon.Id,
         taxon.Name,
+        taxon.CommonName,
         taxon.Rank,
         taxon.ParentId
     });

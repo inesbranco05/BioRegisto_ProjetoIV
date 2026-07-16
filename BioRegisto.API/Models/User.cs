@@ -15,4 +15,6 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public List<Observation> Observations { get; set; } = new();
+
+    public bool IsActive { get; set; } = true;
 }

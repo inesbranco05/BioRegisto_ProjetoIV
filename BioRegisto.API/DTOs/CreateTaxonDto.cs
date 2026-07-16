@@ -7,4 +7,6 @@ public class CreateTaxonDto
     public string Rank { get; set; } = string.Empty;
 
     public int? ParentId { get; set; }
+
+    public string? CommonName { get; set; }
 }

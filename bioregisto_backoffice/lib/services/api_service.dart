@@ -218,6 +218,7 @@ static Future<Map<String, dynamic>> createTaxon({
   required String name,
   required String rank,
   int? parentId,
+  String? commonName,
 }) async {
   try {
     final response = await http.post(
@@ -231,6 +232,7 @@ static Future<Map<String, dynamic>> createTaxon({
         'name': name,
         'rank': rank,
         'parentId': parentId,
+        'commonName': commonName,
       }),
     );
 
@@ -265,6 +267,7 @@ static Future<Map<String, dynamic>>
     updateTaxon({
   required int id,
   required String name,
+  String? commonName,
 }) async {
   try {
     final response = await http.put(
@@ -280,6 +283,7 @@ static Future<Map<String, dynamic>>
       },
       body: jsonEncode({
         'name': name,
+        'commonName': commonName,
       }),
     );
 
@@ -470,5 +474,283 @@ static Future<List<dynamic>>
   throw Exception(
     'Não foi possível carregar o histórico de validações.',
   );
+}
+
+// =========================
+// UTILIZADORES - ADMIN
+// =========================
+
+static Future<List<dynamic>> getUsers() async {
+  final response = await http.get(
+    Uri.parse('$baseUrl/Users'),
+    headers: {
+      'Authorization': 'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar os utilizadores.',
+  );
+}
+
+static Future<Map<String, dynamic>> createUser({
+  required String name,
+  required String email,
+  required String password,
+  required String role,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse('$baseUrl/Users'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'password': password,
+        'role': role,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'user': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+          'Não foi possível criar o utilizador.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+
+// =========================
+// ADMIN - EDITAR USER
+// ========================= 
+
+static Future<Map<String, dynamic>> updateUser({
+  required int id,
+  required String name,
+  required String email,
+  required String role,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse('$baseUrl/Users/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $authToken',
+      },
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+        'role': role,
+      }),
+    );
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'user': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+          'Não foi possível atualizar o utilizador.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+
+// =========================
+// ADMIN - DESATIVAR CONTA 
+// ========================= 
+
+static Future<Map<String, dynamic>>
+    changeUserStatus({
+  required int id,
+}) async {
+  try {
+    final response = await http.patch(
+      Uri.parse(
+        '$baseUrl/Users/$id/status',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $authToken',
+      },
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'user': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível alterar o estado da conta.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+
+// =========================
+// ADMIN - TAXONOMIA
+// ========================= 
+static Future<List<dynamic>>
+    getSpeciesDatabase() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/Taxonomy/species',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar a base de dados de espécies.',
+  );
+}
+
+// =========================
+// ADMIN - OBSERVAÇÕES
+// ========================= 
+
+static Future<List<dynamic>>
+    getAdminObservations() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/Observations/admin',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar as observações.',
+  );
+}
+// =========================
+// ADMIN - NOTIFICAÇÕES
+// ========================= 
+
+static Future<List<dynamic>>
+    getNotifications() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/Notifications',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar notificações.',
+  );
+}
+
+static Future<Map<String, dynamic>>
+    createNotification({
+  required String title,
+  required String message,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '$baseUrl/Notifications',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $authToken',
+      },
+      body: jsonEncode({
+        'title': title,
+        'message': message,
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'notification': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível enviar a notificação.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
 }
 }

@@ -14,6 +14,9 @@ public class Taxon
 
     public Taxon? Parent { get; set; }
 
+    public string? CommonName { get; set; }
+
     public List<Taxon> Children { get; set; } =
         new();
+
 }

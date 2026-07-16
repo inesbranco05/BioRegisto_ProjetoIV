@@ -175,212 +175,86 @@ class _TaxonomyManagementScreenState
     );
   }
 
-  Future<void> _showAddDialog({
-    required String rank,
-    required int? parentId,
-  }) async {
-    final controller =
-        TextEditingController();
+Future<void> _showAddDialog({
+  required String rank,
+  required int? parentId,
+}) async {
+  final nameController =
+      TextEditingController();
 
-    final label =
-        _rankLabels[rank] ?? rank;
+  final commonNameController =
+      TextEditingController();
 
-    final name =
-        await showDialog<String>(
-      context: context,
+  final label =
+      _rankLabels[rank] ?? rank;
 
-      builder: (dialogContext) {
-        return AlertDialog(
-          title: Text(
-            'Adicionar $label',
-          ),
-
-          content: SizedBox(
-            width: 450,
-
-            child: TextField(
-              controller: controller,
-              autofocus: true,
-
-              decoration: InputDecoration(
-                labelText:
-                    'Nome do $label',
-                hintText:
-                    rank == 'Species'
-                        ? 'Ex.: Passer domesticus'
-                        : null,
-                border:
-                    const OutlineInputBorder(),
-              ),
-
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  Navigator.pop(
-                    dialogContext,
-                    value.trim(),
-                  );
-                }
-              },
-            ),
-          ),
-
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                );
-              },
-
-              child: const Text(
-                'Cancelar',
-              ),
-            ),
-
-            ElevatedButton(
-              onPressed: () {
-                final value =
-                    controller.text.trim();
-
-                if (value.isEmpty) {
-                  return;
-                }
-
-                Navigator.pop(
-                  dialogContext,
-                  value,
-                );
-              },
-
-              style:
-                  ElevatedButton.styleFrom(
-                backgroundColor:
-                    AppColors.primary,
-                foregroundColor:
-                    Colors.white,
-              ),
-
-              child: const Text(
-                'Adicionar',
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    controller.dispose();
-
-    if (name == null) {
-      return;
-    }
-
-    final result =
-        await ApiService.createTaxon(
-      name: name,
-      rank: rank,
-      parentId: parentId,
-    );
-
-    if (!mounted) return;
-
-    if (result['success'] != true) {
-      _showMessage(
-        result['message'] ??
-            'Não foi possível criar o táxon.',
-      );
-
-      return;
-    }
-
-    _showMessage(
-      '$label criado com sucesso.',
-    );
-
-    // Novo Reino
-    if (parentId == null) {
-      await _loadRoots();
-
-      return;
-    }
-
-    // Atualizar apenas os filhos
-    // do nível onde adicionámos.
-    try {
-      final updatedChildren =
-          await ApiService
-              .getTaxonChildren(
-        parentId,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _children[parentId] =
-            updatedChildren;
-
-        _expandedIds.add(parentId);
-      });
-    } catch (error) {
-      _showMessage(
-        'O táxon foi criado, mas não foi possível atualizar a árvore.',
-      );
-    }
-  }
-
-  void _showMessage(
-    String message,
-  ) {
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
-  }
-
-  Future<void> _editTaxon() async {
-  if (_selectedTaxon == null) {
-    return;
-  }
-
-  final controller =
-      TextEditingController(
-    text: _selectedTaxon['name'],
-  );
-
-  final newName =
-      await showDialog<String>(
+  final result =
+      await showDialog<Map<String, String?>>(
     context: context,
 
     builder: (dialogContext) {
       return AlertDialog(
-        title: const Text(
-          'Editar táxon',
+        title: Text(
+          'Adicionar $label',
         ),
 
         content: SizedBox(
           width: 450,
 
-          child: TextField(
-            controller: controller,
-            autofocus: true,
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
 
-            decoration:
-                const InputDecoration(
-              labelText: 'Nome',
-              border:
-                  OutlineInputBorder(),
-            ),
+            children: [
+              TextField(
+                controller:
+                    nameController,
 
-            onSubmitted: (value) {
-              if (value.trim().isNotEmpty) {
-                Navigator.pop(
-                  dialogContext,
-                  value.trim(),
-                );
-              }
-            },
+                autofocus: true,
+
+                decoration:
+                    InputDecoration(
+                  labelText:
+                      rank == 'Species'
+                          ? 'Nome científico'
+                          : 'Nome do $label',
+
+                  hintText:
+                      rank == 'Species'
+                          ? 'Ex.: Passer domesticus'
+                          : null,
+
+                  border:
+                      const OutlineInputBorder(),
+                ),
+              ),
+
+              // O nome comum só faz sentido
+              // quando estamos a criar uma espécie.
+              if (rank ==
+                  'Species') ...[
+                const SizedBox(
+                  height: 16,
+                ),
+
+                TextField(
+                  controller:
+                      commonNameController,
+
+                  decoration:
+                      const InputDecoration(
+                    labelText:
+                        'Nome comum',
+
+                    hintText:
+                        'Ex.: Pardal-comum',
+
+                    border:
+                        OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
 
@@ -399,21 +273,259 @@ class _TaxonomyManagementScreenState
 
           ElevatedButton(
             onPressed: () {
-              final value =
-                  controller.text.trim();
+              final name =
+                  nameController
+                      .text
+                      .trim();
 
-              if (value.isNotEmpty) {
-                Navigator.pop(
-                  dialogContext,
-                  value,
-                );
+              if (name.isEmpty) {
+                return;
               }
+
+              Navigator.pop(
+                dialogContext,
+                {
+                  'name': name,
+
+                  'commonName':
+                      rank == 'Species'
+                          ? commonNameController
+                              .text
+                              .trim()
+                          : null,
+                },
+              );
             },
 
             style:
-                ElevatedButton.styleFrom(
+                ElevatedButton
+                    .styleFrom(
               backgroundColor:
                   AppColors.primary,
+
+              foregroundColor:
+                  Colors.white,
+            ),
+
+            child: const Text(
+              'Adicionar',
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  nameController.dispose();
+  commonNameController.dispose();
+
+  if (result == null) {
+    return;
+  }
+
+  final name =
+      result['name']!;
+
+  final commonName =
+      result['commonName'];
+
+  final apiResult =
+      await ApiService.createTaxon(
+    name: name,
+    rank: rank,
+    parentId: parentId,
+
+    commonName:
+        commonName == null ||
+                commonName.isEmpty
+            ? null
+            : commonName,
+  );
+
+  if (!mounted) return;
+
+  if (apiResult['success'] != true) {
+    _showMessage(
+      apiResult['message'] ??
+          'Não foi possível criar o táxon.',
+    );
+
+    return;
+  }
+
+  _showMessage(
+    '$label criado com sucesso.',
+  );
+
+  // Se criámos um Reino,
+  // atualizar os elementos raiz.
+  if (parentId == null) {
+    await _loadRoots();
+    return;
+  }
+
+  // Atualizar os filhos do táxon
+  // onde o novo elemento foi criado.
+  try {
+    final updatedChildren =
+        await ApiService
+            .getTaxonChildren(
+      parentId,
+    );
+
+    if (!mounted) return;
+
+    setState(() {
+      _children[parentId] =
+          updatedChildren;
+
+      _expandedIds.add(
+        parentId,
+      );
+    });
+  } catch (error) {
+    _showMessage(
+      'O táxon foi criado, mas não foi possível atualizar a árvore.',
+    );
+  }
+}
+
+  void _showMessage(
+    String message,
+  ) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
+Future<void> _editTaxon() async {
+  if (_selectedTaxon == null) {
+    return;
+  }
+
+  final controller =
+      TextEditingController(
+    text: _selectedTaxon['name'] ?? '',
+  );
+
+  final commonNameController =
+      TextEditingController(
+    text:
+        _selectedTaxon['commonName'] ?? '',
+  );
+
+  final bool isSpecies =
+      _selectedTaxon['rank'] == 'Species';
+
+  final result =
+      await showDialog<
+          Map<String, String?>>(
+    context: context,
+
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: const Text(
+          'Editar taxonomia',
+        ),
+
+        content: SizedBox(
+          width: 450,
+
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
+
+            children: [
+              TextField(
+                controller: controller,
+                autofocus: true,
+
+                decoration:
+                    InputDecoration(
+                  labelText:
+                      isSpecies
+                          ? 'Nome científico'
+                          : 'Nome',
+
+                  border:
+                      const OutlineInputBorder(),
+                ),
+              ),
+
+              // O nome comum aparece
+              // apenas para espécies.
+              if (isSpecies) ...[
+                const SizedBox(
+                  height: 16,
+                ),
+
+                TextField(
+                  controller:
+                      commonNameController,
+
+                  decoration:
+                      const InputDecoration(
+                    labelText:
+                        'Nome comum',
+
+                    hintText:
+                        'Ex.: Pardal-comum',
+
+                    border:
+                        OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(
+                dialogContext,
+              );
+            },
+
+            child: const Text(
+              'Cancelar',
+            ),
+          ),
+
+          ElevatedButton(
+            onPressed: () {
+              final name =
+                  controller.text.trim();
+
+              if (name.isEmpty) {
+                return;
+              }
+
+              Navigator.pop(
+                dialogContext,
+                {
+                  'name': name,
+
+                  'commonName':
+                      isSpecies
+                          ? commonNameController
+                              .text
+                              .trim()
+                          : null,
+                },
+              );
+            },
+
+            style:
+                ElevatedButton
+                    .styleFrom(
+              backgroundColor:
+                  AppColors.primary,
+
               foregroundColor:
                   Colors.white,
             ),
@@ -427,26 +539,45 @@ class _TaxonomyManagementScreenState
     },
   );
 
-  controller.dispose();
+  // Guardamos os valores antes
+  // de libertar os controllers.
+  final newName =
+      result?['name'];
 
-  if (newName == null) {
+  final newCommonName =
+      result?['commonName'];
+
+  controller.dispose();
+  commonNameController.dispose();
+
+  // O utilizador cancelou.
+  if (result == null ||
+      newName == null) {
     return;
   }
 
   final id =
       _selectedTaxon['id'];
 
-  final result =
+  final apiResult =
       await ApiService.updateTaxon(
     id: id,
+
     name: newName,
+
+    commonName:
+        isSpecies &&
+                newCommonName != null &&
+                newCommonName.isNotEmpty
+            ? newCommonName
+            : null,
   );
 
   if (!mounted) return;
 
-  if (result['success'] != true) {
+  if (apiResult['success'] != true) {
     _showMessage(
-      result['message'] ??
+      apiResult['message'] ??
           'Não foi possível atualizar o táxon.',
     );
 
@@ -454,7 +585,7 @@ class _TaxonomyManagementScreenState
   }
 
   final updatedTaxon =
-      result['taxon'];
+      apiResult['taxon'];
 
   setState(() {
     _selectedTaxon =

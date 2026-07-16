@@ -180,4 +180,45 @@ public class ObservationsController : ControllerBase
 
         return userId;
     }
+
+// GET api/Observations/admin
+[HttpGet("admin")]
+[Authorize(Roles = "Admin")]
+public async Task<IActionResult> GetAdminObservations()
+{
+    var observations =
+        await _context.Observations
+            .Include(o => o.User)
+            .OrderByDescending(
+                o => o.CreatedAt
+            )
+            .Select(o => new
+            {
+                o.Id,
+
+                o.ScientificName,
+                o.CommonName,
+
+                o.Status,
+
+                o.Latitude,
+                o.Longitude,
+
+                o.CreatedAt,
+
+                UserName =
+                    o.User != null
+                        ? o.User.Name
+                        : "Utilizador desconhecido",
+
+                UserEmail =
+                    o.User != null
+                        ? o.User.Email
+                        : null
+            })
+            .ToListAsync();
+
+    return Ok(observations);
+}
+
 }

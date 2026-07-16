@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import '../../services/api_service.dart';
 import '../../utils/app_colors.dart';
 import '../auth/login_screen.dart';
+import 'users_management_screen.dart';
+import 'species_database_screen.dart';
+import 'observations_management_screen.dart';
+import 'notifications_management_screen.dart';
 
 class AdminDashboard extends StatelessWidget {
   const AdminDashboard({super.key});
@@ -64,29 +68,69 @@ class AdminDashboard extends StatelessWidget {
                   true,
                 ),
 
-                _menuItem(
-                  Icons.people_outline,
-                  'Utilizadores',
-                  false,
-                ),
+               _menuItem(
+  Icons.people_outline,
+  'Utilizadores',
+  false,
 
-                _menuItem(
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const UsersManagementScreen(),
+      ),
+    );
+  },
+),
+
+               _menuItem(
                   Icons.eco_outlined,
                   'Espécies',
                   false,
+
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const SpeciesDatabaseScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 _menuItem(
                   Icons.visibility_outlined,
                   'Observações',
                   false,
+
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const ObservationsManagementScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 _menuItem(
-                  Icons.notifications_outlined,
-                  'Notificações',
-                  false,
-                ),
+                    Icons.notifications_outlined,
+                    'Notificações',
+                    false,
+
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const NotificationsManagementScreen(),
+                        ),
+                      );
+                    },
+                  ),
 
                 _menuItem(
                   Icons.emoji_events_outlined,

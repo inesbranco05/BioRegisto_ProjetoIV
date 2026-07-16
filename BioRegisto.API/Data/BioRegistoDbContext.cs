@@ -17,4 +17,6 @@ public class BioRegistoDbContext : DbContext
     public DbSet<User> Users { get; set; }
 
     public DbSet<Taxon> Taxa { get; set; }
+
+    public DbSet<Notification> Notifications { get; set; }
 }

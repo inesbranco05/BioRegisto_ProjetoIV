@@ -1146,10 +1146,18 @@ Future<dynamic> _createTaxonDuringValidation({
   required String label,
   int? parentId,
 }) async {
-  final controller =
+  final nameController =
       TextEditingController();
 
-  final name = await showDialog<String>(
+  final commonNameController =
+      TextEditingController();
+
+  final bool isSpecies =
+      rank == 'Species';
+
+  final dialogResult =
+      await showDialog<
+          Map<String, String?>>(
     context: context,
 
     builder: (dialogContext) {
@@ -1161,20 +1169,57 @@ Future<dynamic> _createTaxonDuringValidation({
         content: SizedBox(
           width: 420,
 
-          child: TextField(
-            controller: controller,
-            autofocus: true,
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min,
 
-            decoration: InputDecoration(
-              labelText: 'Nome',
-              hintText:
-                  rank == 'Species'
-                      ? 'Ex.: Passer domesticus'
-                      : null,
+            children: [
+              TextField(
+                controller:
+                    nameController,
 
-              border:
-                  const OutlineInputBorder(),
-            ),
+                autofocus: true,
+
+                decoration:
+                    InputDecoration(
+                  labelText:
+                      isSpecies
+                          ? 'Nome científico'
+                          : 'Nome',
+
+                  hintText:
+                      isSpecies
+                          ? 'Ex.: Passer domesticus'
+                          : null,
+
+                  border:
+                      const OutlineInputBorder(),
+                ),
+              ),
+
+              if (isSpecies) ...[
+                const SizedBox(
+                  height: 16,
+                ),
+
+                TextField(
+                  controller:
+                      commonNameController,
+
+                  decoration:
+                      const InputDecoration(
+                    labelText:
+                        'Nome comum',
+
+                    hintText:
+                        'Ex.: Pardal-comum',
+
+                    border:
+                        OutlineInputBorder(),
+                  ),
+                ),
+              ],
+            ],
           ),
         ),
 
@@ -1186,34 +1231,67 @@ Future<dynamic> _createTaxonDuringValidation({
               );
             },
 
-            child:
-                const Text('Cancelar'),
+            child: const Text(
+              'Cancelar',
+            ),
           ),
 
           ElevatedButton(
             onPressed: () {
-              final value =
-                  controller.text.trim();
+              final name =
+                  nameController
+                      .text
+                      .trim();
 
-              if (value.isNotEmpty) {
-                Navigator.pop(
-                  dialogContext,
-                  value,
-                );
+              if (name.isEmpty) {
+                return;
               }
+
+              Navigator.pop(
+                dialogContext,
+                {
+                  'name': name,
+
+                  'commonName':
+                      isSpecies
+                          ? commonNameController
+                              .text
+                              .trim()
+                          : null,
+                },
+              );
             },
 
-            child:
-                const Text('Adicionar'),
+            style:
+                ElevatedButton
+                    .styleFrom(
+              backgroundColor:
+                  AppColors.primary,
+
+              foregroundColor:
+                  Colors.white,
+            ),
+
+            child: const Text(
+              'Adicionar',
+            ),
           ),
         ],
       );
     },
   );
 
-  controller.dispose();
+  final name =
+      dialogResult?['name'];
 
-  if (name == null) {
+  final commonName =
+      dialogResult?['commonName'];
+
+  nameController.dispose();
+  commonNameController.dispose();
+
+  if (dialogResult == null ||
+      name == null) {
     return null;
   }
 
@@ -1222,6 +1300,13 @@ Future<dynamic> _createTaxonDuringValidation({
     name: name,
     rank: rank,
     parentId: parentId,
+
+    commonName:
+        isSpecies &&
+                commonName != null &&
+                commonName.isNotEmpty
+            ? commonName
+            : null,
   );
 
   if (!mounted) {
