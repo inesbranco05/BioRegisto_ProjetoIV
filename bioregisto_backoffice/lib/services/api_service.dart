@@ -753,4 +753,206 @@ static Future<Map<String, dynamic>>
     };
   }
 }
+
+// =========================
+// ADMIN - ESTATISTICAS
+// ========================= 
+
+static Future<Map<String, dynamic>>
+    getAdminStatistics() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/Admin/statistics',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return Map<String, dynamic>.from(
+      jsonDecode(response.body),
+    );
+  }
+
+  throw Exception(
+    'Erro ao carregar as estatísticas.',
+  );
+}
+
+// ===========================
+// ADMIN - EVENTOS E DESAFIOS
+// =========================== 
+static Future<List<dynamic>>
+    getEventChallenges() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/EventChallenges',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar eventos e desafios.',
+  );
+}
+
+static Future<Map<String, dynamic>>
+    createEventChallenge({
+  required String title,
+  required String description,
+  required String type,
+  required DateTime startDate,
+  required DateTime endDate,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '$baseUrl/EventChallenges',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+        'Authorization':
+            'Bearer $authToken',
+      },
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'type': type,
+        'startDate':
+            startDate.toUtc().toIso8601String(),
+        'endDate':
+            endDate.toUtc().toIso8601String(),
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'item': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível criar.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+
+static Future<Map<String, dynamic>>
+    toggleEventChallengeStatus(
+  int id,
+) async {
+  try {
+    final response = await http.patch(
+      Uri.parse(
+        '$baseUrl/EventChallenges/$id/toggle-status',
+      ),
+      headers: {
+        'Authorization':
+            'Bearer $authToken',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+      };
+    }
+
+    final data =
+        jsonDecode(response.body);
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível alterar o estado.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+static Future<Map<String, dynamic>>
+    updateEventChallenge({
+  required int id,
+  required String title,
+  required String description,
+  required String type,
+  required DateTime startDate,
+  required DateTime endDate,
+  required bool isActive,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse(
+        '$baseUrl/EventChallenges/$id',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization':
+            'Bearer $authToken',
+      },
+      body: jsonEncode({
+        'title': title,
+        'description': description,
+        'type': type,
+        'startDate':
+            startDate.toUtc().toIso8601String(),
+        'endDate':
+            endDate.toUtc().toIso8601String(),
+        'isActive': isActive,
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'item': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível atualizar.',
+    };
+  } catch (_) {
+    return {
+      'success': false,
+      'message':
+          'Não foi possível comunicar com o servidor.',
+    };
+  }
+}
+
 }

@@ -7,9 +7,70 @@ import 'users_management_screen.dart';
 import 'species_database_screen.dart';
 import 'observations_management_screen.dart';
 import 'notifications_management_screen.dart';
+import 'events_challenges_management_screen.dart';
 
-class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({super.key});
+class AdminDashboard extends StatefulWidget {
+  const AdminDashboard({
+    super.key,
+  });
+
+  @override
+  State<AdminDashboard> createState() =>
+      _AdminDashboardState();
+}
+
+class _AdminDashboardState
+    extends State<AdminDashboard> {
+  Map<String, dynamic>? _statistics;
+
+  bool _isLoadingStatistics = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadStatistics();
+  }
+
+  Future<void> _loadStatistics() async {
+    try {
+      final statistics =
+          await ApiService
+              .getAdminStatistics();
+
+      if (!mounted) return;
+
+      setState(() {
+        _statistics = statistics;
+        _isLoadingStatistics = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingStatistics = false;
+      });
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Não foi possível carregar as estatísticas.',
+          ),
+        ),
+      );
+    }
+  }
+
+  String _statValue(
+    dynamic value,
+  ) {
+    if (_isLoadingStatistics) {
+      return '...';
+    }
+
+    return value?.toString() ?? '0';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -132,10 +193,19 @@ class AdminDashboard extends StatelessWidget {
                     },
                   ),
 
-                _menuItem(
+               _menuItem(
                   Icons.emoji_events_outlined,
                   'Eventos e Desafios',
                   false,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const EventsChallengesManagementScreen(),
+                      ),
+                    );
+                  },
                 ),
 
                 const Spacer(),
@@ -240,87 +310,174 @@ class AdminDashboard extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 20),
+Row(
+  children: [
+    Expanded(
+      child: _statCard(
+        Icons.people_outline,
+        'Utilizadores',
+        _statValue(
+          _statistics?['users']
+              ?['total'],
+        ),
+      ),
+    ),
 
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _statCard(
-                          Icons.people_outline,
-                          'Utilizadores',
-                          '—',
-                        ),
-                      ),
+    const SizedBox(width: 15),
 
-                      const SizedBox(width: 15),
+    Expanded(
+      child: _statCard(
+        Icons.verified_user_outlined,
+        'Técnicos',
+        _statValue(
+          _statistics?['users']
+              ?['validators'],
+        ),
+      ),
+    ),
 
-                      Expanded(
-                        child: _statCard(
-                          Icons.verified_user_outlined,
-                          'Técnicos',
-                          '—',
-                        ),
-                      ),
+    const SizedBox(width: 15),
 
-                      const SizedBox(width: 15),
+    Expanded(
+      child: _statCard(
+        Icons.visibility_outlined,
+        'Observações',
+        _statValue(
+          _statistics?['observations']
+              ?['total'],
+        ),
+      ),
+    ),
 
-                      Expanded(
-                        child: _statCard(
-                          Icons.visibility_outlined,
-                          'Observações',
-                          '—',
-                        ),
-                      ),
+    const SizedBox(width: 15),
 
-                      const SizedBox(width: 15),
-
-                      Expanded(
-                        child: _statCard(
-                          Icons.eco_outlined,
-                          'Espécies',
-                          '—',
-                        ),
-                      ),
-                    ],
-                  ),
+    Expanded(
+      child: _statCard(
+        Icons.eco_outlined,
+        'Espécies',
+        _statValue(
+          _statistics?['species'],
+        ),
+      ),
+    ),
+  ],
+),
 
                   const SizedBox(height: 35),
 
-                  Container(
-                    width: double.infinity,
-                    padding:
-                        const EdgeInsets.all(25),
+                Container(
+  width: double.infinity,
 
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius:
-                          BorderRadius.circular(20),
-                    ),
+  padding:
+      const EdgeInsets.all(25),
 
-                    child: const Column(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+  decoration: BoxDecoration(
+    color: Colors.white,
 
-                      children: [
-                        Text(
-                          'Atividade do sistema',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight:
-                                FontWeight.bold,
-                          ),
-                        ),
+    borderRadius:
+        BorderRadius.circular(20),
+  ),
 
-                        SizedBox(height: 10),
+  child: Column(
+    crossAxisAlignment:
+        CrossAxisAlignment.start,
 
-                        Text(
-                          'As estatísticas e a atividade recente do sistema serão apresentadas aqui.',
-                          style: TextStyle(
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+    children: [
+      Row(
+        mainAxisAlignment:
+            MainAxisAlignment
+                .spaceBetween,
+
+        children: [
+          const Text(
+            'Atividade do sistema',
+
+            style: TextStyle(
+              fontSize: 20,
+
+              fontWeight:
+                  FontWeight.bold,
+            ),
+          ),
+
+          IconButton(
+            tooltip: 'Atualizar',
+
+            onPressed:
+                _loadStatistics,
+
+            icon: Icon(
+              Icons.refresh,
+
+              color:
+                  AppColors.primary,
+            ),
+          ),
+        ],
+      ),
+
+      const SizedBox(height: 25),
+
+      Wrap(
+        spacing: 40,
+        runSpacing: 25,
+
+        children: [
+          _activityItem(
+            'Utilizadores ativos',
+            _statValue(
+              _statistics?['users']
+                  ?['active'],
+            ),
+          ),
+
+          _activityItem(
+            'Observadores',
+            _statValue(
+              _statistics?['users']
+                  ?['observers'],
+            ),
+          ),
+
+          _activityItem(
+            'Pendentes',
+            _statValue(
+              _statistics?[
+                      'observations']
+                  ?['pending'],
+            ),
+          ),
+
+          _activityItem(
+            'Aprovadas',
+            _statValue(
+              _statistics?[
+                      'observations']
+                  ?['validated'],
+            ),
+          ),
+
+          _activityItem(
+            'Rejeitadas',
+            _statValue(
+              _statistics?[
+                      'observations']
+                  ?['rejected'],
+            ),
+          ),
+
+          _activityItem(
+            'Notificações enviadas',
+            _statValue(
+              _statistics?[
+                  'notifications'],
+            ),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
                 ],
               ),
             ),
@@ -432,4 +589,44 @@ class AdminDashboard extends StatelessWidget {
       ),
     );
   }
+
+  Widget _activityItem(
+  String label,
+  String value,
+) {
+  return SizedBox(
+    width: 180,
+
+    child: Column(
+      crossAxisAlignment:
+          CrossAxisAlignment.start,
+
+      children: [
+        Text(
+          value,
+
+          style: TextStyle(
+            fontSize: 25,
+
+            fontWeight:
+                FontWeight.bold,
+
+            color:
+                AppColors.primary,
+          ),
+        ),
+
+        const SizedBox(height: 4),
+
+        Text(
+          label,
+
+          style: const TextStyle(
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

@@ -19,4 +19,7 @@ public class BioRegistoDbContext : DbContext
     public DbSet<Taxon> Taxa { get; set; }
 
     public DbSet<Notification> Notifications { get; set; }
+
+    public DbSet<EventChallenge> EventChallenges
+    { get; set; }
 }
