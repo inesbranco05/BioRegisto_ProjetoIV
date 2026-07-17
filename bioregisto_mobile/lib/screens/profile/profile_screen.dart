@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../utils/app_colors.dart';
+
 import '../../services/api_service.dart';
+import '../../utils/app_colors.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({
+    super.key,
+  });
 
   @override
   State<ProfileScreen> createState() =>
@@ -12,7 +16,8 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState
     extends State<ProfileScreen> {
-  late Future<List<dynamic>> _observationsFuture;
+  late Future<List<dynamic>>
+      _observationsFuture;
 
   @override
   void initState() {
@@ -22,30 +27,73 @@ class _ProfileScreenState
         ApiService.getObservations();
   }
 
-  bool _isVerified(dynamic observation) {
-    final status =
-        observation['status']
-                ?.toString()
-                .toLowerCase() ??
-            '';
+  // =========================
+  // ESTADOS DAS OBSERVAÇÕES
+  // =========================
 
-    return status == 'verified' ||
-        status == 'verificada' ||
-        status == 'approved' ||
-        status == 'aprovada';
+  String _getStatus(
+    dynamic observation,
+  ) {
+    return observation['status']
+            ?.toString()
+            .trim()
+            .toLowerCase() ??
+        '';
+  }
+
+  bool _isValidated(
+    dynamic observation,
+  ) {
+    return _getStatus(observation) ==
+        'validated';
+  }
+
+  bool _isPending(
+    dynamic observation,
+  ) {
+    return _getStatus(observation) ==
+        'pending';
+  }
+
+  bool _isRejected(
+    dynamic observation,
+  ) {
+    return _getStatus(observation) ==
+        'rejected';
   }
 
   @override
-  Widget build(BuildContext context) {
-    final user = ApiService.currentUser;
+  Widget build(
+    BuildContext context,
+  ) {
+    final user =
+        ApiService.currentUser;
 
     final userName =
         user?['name']?.toString() ??
             'Utilizador';
 
+    final userEmail =
+        user?['email']?.toString() ??
+            '';
+
+            final profileImageUrl =
+    user?['profileImageUrl']
+        ?.toString();
+
+final fullProfileImageUrl =
+    profileImageUrl != null &&
+            profileImageUrl.isNotEmpty
+        ? profileImageUrl.startsWith('http')
+            ? profileImageUrl
+            : '${ApiService.baseUrl.replaceFirst('/api', '')}$profileImageUrl'
+        : null;
+
     return Scaffold(
       backgroundColor:
-          const Color(0xFFF4F7F3),
+          const Color(
+        0xFFF4F7F3,
+      ),
 
       appBar: AppBar(
         backgroundColor:
@@ -57,28 +105,111 @@ class _ProfileScreenState
             const IconThemeData(
           color: Colors.white,
         ),
+
+        title:
+            const Text(
+          'Perfil',
+
+          style: TextStyle(
+            color:
+                Colors.white,
+          ),
+        ),
+
+        centerTitle: true,
       ),
 
-      body: FutureBuilder<List<dynamic>>(
-        future: _observationsFuture,
+      body:
+          FutureBuilder<List<dynamic>>(
+        future:
+            _observationsFuture,
 
-        builder: (context, snapshot) {
+        builder: (
+          context,
+          snapshot,
+        ) {
           if (snapshot.connectionState ==
               ConnectionState.waiting) {
-            return const Center(
+            return Center(
               child:
-                  CircularProgressIndicator(),
+                  CircularProgressIndicator(
+                color:
+                    AppColors.primary,
+              ),
             );
           }
 
           if (snapshot.hasError) {
             return Center(
-              child: Text(
-                'Erro ao carregar o perfil:\n'
-                '${snapshot.error}',
+              child: Padding(
+                padding:
+                    const EdgeInsets.all(
+                  30,
+                ),
 
-                textAlign:
-                    TextAlign.center,
+                child: Column(
+                  mainAxisAlignment:
+                      MainAxisAlignment
+                          .center,
+
+                  children: [
+                    const Icon(
+                      Icons
+                          .error_outline,
+
+                      size: 50,
+
+                      color:
+                          Colors.grey,
+                    ),
+
+                    const SizedBox(
+                      height: 15,
+                    ),
+
+                    const Text(
+                      'Não foi possível carregar os dados do perfil.',
+
+                      textAlign:
+                          TextAlign.center,
+                    ),
+
+                    const SizedBox(
+                      height: 15,
+                    ),
+
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _observationsFuture =
+                              ApiService
+                                  .getObservations();
+                        });
+                      },
+
+                      style:
+                          ElevatedButton
+                              .styleFrom(
+                        backgroundColor:
+                            AppColors
+                                .primary,
+
+                        foregroundColor:
+                            Colors.white,
+                      ),
+
+                      icon:
+                          const Icon(
+                        Icons.refresh,
+                      ),
+
+                      label:
+                          const Text(
+                        'Tentar novamente',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }
@@ -86,15 +217,41 @@ class _ProfileScreenState
           final observations =
               snapshot.data ?? [];
 
-          // TOTAL DE OBSERVAÇÕES
+          // =========================
+          // ESTATÍSTICAS
+          // =========================
+
           final totalObservations =
               observations.length;
 
-          // ESPÉCIES DISTINTAS
+          final validatedObservations =
+              observations
+                  .where(
+                    _isValidated,
+                  )
+                  .length;
+
+          final pendingObservations =
+              observations
+                  .where(
+                    _isPending,
+                  )
+                  .length;
+
+          final rejectedObservations =
+              observations
+                  .where(
+                    _isRejected,
+                  )
+                  .length;
+
+          // Espécies diferentes
           final uniqueSpecies =
               observations
                   .map(
-                    (observation) =>
+                    (
+                      observation,
+                    ) =>
                         observation[
                                 'scientificName']
                             ?.toString()
@@ -102,35 +259,49 @@ class _ProfileScreenState
                             .toLowerCase(),
                   )
                   .where(
-                    (species) =>
-                        species != null &&
-                        species.isNotEmpty,
+                    (name) =>
+                        name != null &&
+                        name.isNotEmpty,
                   )
                   .toSet()
                   .length;
 
-          // OBSERVAÇÕES VERIFICADAS
-          final verifiedObservations =
-              observations
-                  .where(_isVerified)
-                  .length;
-
-          // LOCAIS DISTINTOS
+          // Locais diferentes
           final uniqueLocations =
               observations
                   .map(
-                    (observation) =>
-                        '${observation['latitude']},'
-                        '${observation['longitude']}',
+                    (
+                      observation,
+                    ) {
+                      final latitude =
+                          observation[
+                              'latitude'];
+
+                      final longitude =
+                          observation[
+                              'longitude'];
+
+                      if (latitude ==
+                              null ||
+                          longitude ==
+                              null) {
+                        return null;
+                      }
+
+                      return '$latitude,$longitude';
+                    },
                   )
+                  .whereType<String>()
                   .toSet()
                   .length;
 
-          // DIAS ATIVOS
+          // Dias diferentes com atividade
           final activeDays =
               observations
                   .map(
-                    (observation) {
+                    (
+                      observation,
+                    ) {
                       final createdAt =
                           observation[
                               'createdAt'];
@@ -141,11 +312,14 @@ class _ProfileScreenState
                       }
 
                       final date =
-                          DateTime.tryParse(
-                        createdAt.toString(),
+                          DateTime
+                              .tryParse(
+                        createdAt
+                            .toString(),
                       );
 
-                      if (date == null) {
+                      if (date ==
+                          null) {
                         return null;
                       }
 
@@ -158,39 +332,68 @@ class _ProfileScreenState
                   .toSet()
                   .length;
 
-          // CONTAGEM POR ESPÉCIE
+          // Contagem por espécie
           final Map<String, int>
               speciesCount = {};
 
           for (final observation
               in observations) {
             final commonName =
-                observation['commonName']
+                observation[
+                            'commonName']
                         ?.toString()
                         .trim() ??
                     '';
 
-            if (commonName.isNotEmpty) {
-              speciesCount[
-                      commonName] =
-                  (speciesCount[
-                              commonName] ??
-                          0) +
-                      1;
+            final scientificName =
+                observation[
+                            'scientificName']
+                        ?.toString()
+                        .trim() ??
+                    '';
+
+            String speciesName;
+
+            if (commonName
+                .isNotEmpty) {
+              speciesName =
+                  commonName;
+            } else if (
+                scientificName
+                    .isNotEmpty) {
+              speciesName =
+                  scientificName;
+            } else {
+              speciesName =
+                  'Espécie desconhecida';
             }
+
+            speciesCount[
+                speciesName] =
+                (speciesCount[
+                            speciesName] ??
+                        0) +
+                    1;
           }
 
           return SingleChildScrollView(
             child: Column(
               children: [
+                // =========================
                 // HEADER
+                // =========================
+
                 Container(
                   width:
                       double.infinity,
 
                   padding:
-                      const EdgeInsets.only(
+                      const EdgeInsets
+                          .only(
+                    top: 15,
                     bottom: 30,
+                    left: 20,
+                    right: 20,
                   ),
 
                   decoration:
@@ -215,21 +418,26 @@ class _ProfileScreenState
 
                   child: Column(
                     children: [
-                      const CircleAvatar(
-                        radius: 45,
+                      CircleAvatar(
+  radius: 45,
+  backgroundColor: Colors.white,
 
-                        backgroundColor:
-                            Colors.white,
+  backgroundImage:
+      fullProfileImageUrl != null
+          ? NetworkImage(
+              fullProfileImageUrl,
+            )
+          : null,
 
-                        child: Icon(
-                          Icons.person,
-
-                          size: 50,
-
-                          color:
-                              Colors.grey,
-                        ),
-                      ),
+  child:
+      fullProfileImageUrl == null
+          ? const Icon(
+              Icons.person,
+              size: 50,
+              color: Colors.grey,
+            )
+          : null,
+),
 
                       const SizedBox(
                         height: 15,
@@ -237,6 +445,10 @@ class _ProfileScreenState
 
                       Text(
                         userName,
+
+                        textAlign:
+                            TextAlign
+                                .center,
 
                         style:
                             const TextStyle(
@@ -255,31 +467,64 @@ class _ProfileScreenState
                         height: 5,
                       ),
 
-                      const Text(
-                        "Observador registado",
+                      Text(
+                        userEmail,
 
-                        style: TextStyle(
-                          color: Colors
-                              .white70,
+                        textAlign:
+                            TextAlign
+                                .center,
+
+                        style:
+                            const TextStyle(
+                          color:
+                              Colors
+                                  .white70,
+
+                          fontSize: 14,
                         ),
                       ),
 
                       const SizedBox(
-                        height: 15,
-                      ),
+  height: 20,
+),
 
-                      ElevatedButton.icon(
-                        onPressed: () {},
+OutlinedButton.icon(
+  onPressed: () async {
+    final updated =
+        await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            const EditProfileScreen(),
+      ),
+    );
 
-                        icon: const Icon(
-                          Icons.share,
-                        ),
+    if (updated == true &&
+        mounted) {
+      setState(() {
+        // Reconstrói o perfil para
+        // apresentar os novos dados.
+      });
+    }
+  },
 
-                        label:
-                            const Text(
-                          "Partilhar perfil",
-                        ),
-                      ),
+  style: OutlinedButton.styleFrom(
+    foregroundColor:
+        Colors.white,
+
+    side: const BorderSide(
+      color: Colors.white,
+    ),
+  ),
+
+  icon: const Icon(
+    Icons.edit_outlined,
+  ),
+
+  label: const Text(
+    'Editar perfil',
+  ),
+),
                     ],
                   ),
                 ),
@@ -292,7 +537,9 @@ class _ProfileScreenState
 
                   child: Column(
                     children: [
-                      // ESTATÍSTICAS
+                      // =========================
+                      // ESTATÍSTICAS GERAIS
+                      // =========================
 
                       Row(
                         children: [
@@ -302,7 +549,7 @@ class _ProfileScreenState
                               totalObservations
                                   .toString(),
 
-                              "Observações",
+                              'Observações',
                             ),
                           ),
 
@@ -316,7 +563,7 @@ class _ProfileScreenState
                               uniqueSpecies
                                   .toString(),
 
-                              "Espécies",
+                              'Espécies',
                             ),
                           ),
                         ],
@@ -334,7 +581,7 @@ class _ProfileScreenState
                               uniqueLocations
                                   .toString(),
 
-                              "Locais",
+                              'Locais',
                             ),
                           ),
 
@@ -348,7 +595,7 @@ class _ProfileScreenState
                               activeDays
                                   .toString(),
 
-                              "Dias ativos",
+                              'Dias ativos',
                             ),
                           ),
                         ],
@@ -358,77 +605,48 @@ class _ProfileScreenState
                         height: 25,
                       ),
 
-                      // ESTADO DAS OBSERVAÇÕES
+                      // =========================
+                      // RESUMO DOS ESTADOS
+                      // =========================
 
                       _sectionCard(
-                        "Resumo",
+                        'Resumo',
 
-                        Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment
+                        Wrap(
+                          alignment:
+                              WrapAlignment
                                   .spaceAround,
+
+                          spacing: 25,
+
+                          runSpacing: 20,
 
                           children: [
                             _summaryItem(
-                              verifiedObservations
+                              validatedObservations
                                   .toString(),
 
-                              "Verificadas",
+                              'Validadas',
 
                               Colors.green,
                             ),
 
                             _summaryItem(
-                              (totalObservations -
-                                      verifiedObservations)
+                              pendingObservations
                                   .toString(),
 
-                              "Pendentes",
+                              'Pendentes',
 
                               Colors.orange,
                             ),
-                          ],
-                        ),
-                      ),
 
-                      const SizedBox(
-                        height: 20,
-                      ),
+                            _summaryItem(
+                              rejectedObservations
+                                  .toString(),
 
-                      // CONQUISTAS
+                              'Rejeitadas',
 
-                      _sectionCard(
-                        "Conquistas",
-
-                        Wrap(
-                          spacing: 10,
-                          runSpacing: 10,
-
-                          children: [
-                            _achievement(
-                              Icons
-                                  .my_location,
-
-                              "Primeiro Registo",
-                            ),
-
-                            _achievement(
-                              Icons.star,
-
-                              "Observador Ativo",
-                            ),
-
-                            _achievement(
-                              Icons
-                                  .emoji_events,
-
-                              "10 Espécies",
-                            ),
-
-                            _achievement(
-                              Icons.verified,
-
-                              "Verificador",
+                              Colors.red,
                             ),
                           ],
                         ),
@@ -438,12 +656,15 @@ class _ProfileScreenState
                         height: 20,
                       ),
 
-                      // ESPÉCIES
+                      // =========================
+                      // ESPÉCIES REGISTADAS
+                      // =========================
 
                       _sectionCard(
-                        "Espécies registadas",
+                        'Espécies registadas',
 
-                        speciesCount.isEmpty
+                        speciesCount
+                                .isEmpty
                             ? const Padding(
                                 padding:
                                     EdgeInsets
@@ -451,9 +672,15 @@ class _ProfileScreenState
                                   20,
                                 ),
 
-                                child: Center(
-                                  child: Text(
-                                    "Ainda não existem espécies registadas.",
+                                child:
+                                    Center(
+                                  child:
+                                      Text(
+                                    'Ainda não existem espécies registadas.',
+
+                                    textAlign:
+                                        TextAlign
+                                            .center,
 
                                     style:
                                         TextStyle(
@@ -469,27 +696,99 @@ class _ProfileScreenState
                                     speciesCount
                                         .entries
                                         .map(
-                                  (entry) {
+                                  (
+                                    entry,
+                                  ) {
                                     return ListTile(
+                                      contentPadding:
+                                          EdgeInsets
+                                              .zero,
+
                                       leading:
-                                          const Icon(
-                                        Icons
-                                            .eco_outlined,
+                                          Container(
+                                        width:
+                                            42,
+
+                                        height:
+                                            42,
+
+                                        decoration:
+                                            BoxDecoration(
+                                          color: AppColors
+                                              .primary
+                                              .withOpacity(
+                                            0.10,
+                                          ),
+
+                                          borderRadius:
+                                              BorderRadius
+                                                  .circular(
+                                            12,
+                                          ),
+                                        ),
+
+                                        child:
+                                            Icon(
+                                          Icons
+                                              .eco_outlined,
+
+                                          color:
+                                              AppColors
+                                                  .primary,
+                                        ),
                                       ),
 
                                       title:
                                           Text(
-                                        entry.key,
+                                        entry
+                                            .key,
+
+                                        style:
+                                            const TextStyle(
+                                          fontWeight:
+                                              FontWeight
+                                                  .w500,
+                                        ),
                                       ),
 
                                       trailing:
-                                          Text(
-                                        "${entry.value}x",
+                                          Container(
+                                        padding:
+                                            const EdgeInsets
+                                                .symmetric(
+                                          horizontal:
+                                              10,
+
+                                          vertical:
+                                              5,
+                                        ),
+
+                                        decoration:
+                                            BoxDecoration(
+                                          color: Colors
+                                              .grey
+                                              .shade100,
+
+                                          borderRadius:
+                                              BorderRadius
+                                                  .circular(
+                                            10,
+                                          ),
+                                        ),
+
+                                        child:
+                                            Text(
+                                          '${entry.value}x',
+                                        ),
                                       ),
                                     );
                                   },
                                 ).toList(),
                               ),
+                      ),
+
+                      const SizedBox(
+                        height: 25,
                       ),
                     ],
                   ),
@@ -502,19 +801,45 @@ class _ProfileScreenState
     );
   }
 
+  // =========================
+  // CARTÃO DE ESTATÍSTICA
+  // =========================
+
   Widget _statCard(
     String value,
     String label,
   ) {
     return Container(
       padding:
-          const EdgeInsets.all(20),
+          const EdgeInsets.all(
+        20,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+          BoxDecoration(
         color: Colors.white,
 
         borderRadius:
-            BorderRadius.circular(20),
+            BorderRadius.circular(
+          20,
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withOpacity(
+              0.04,
+            ),
+
+            blurRadius: 10,
+
+            offset:
+                const Offset(
+              0,
+              4,
+            ),
+          ),
+        ],
       ),
 
       child: Column(
@@ -522,73 +847,94 @@ class _ProfileScreenState
           Text(
             value,
 
-            style: const TextStyle(
+            style:
+                TextStyle(
               fontSize: 28,
 
               fontWeight:
                   FontWeight.bold,
+
+              color:
+                  AppColors.primary,
             ),
           ),
 
-          Text(label),
+          const SizedBox(
+            height: 5,
+          ),
+
+          Text(
+            label,
+
+            textAlign:
+                TextAlign.center,
+
+            style:
+                const TextStyle(
+              color:
+                  Colors.grey,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _summaryItem(
-    String value,
-    String label,
-    Color color,
-  ) {
-    return Column(
-      children: [
-        Text(
-          value,
-
-          style: TextStyle(
-            fontSize: 26,
-
-            fontWeight:
-                FontWeight.bold,
-
-            color: color,
-          ),
-        ),
-
-        const SizedBox(height: 5),
-
-        Text(label),
-      ],
-    );
-  }
+  // =========================
+  // SECÇÃO
+  // =========================
 
   Widget _sectionCard(
     String title,
     Widget child,
   ) {
     return Container(
-      width: double.infinity,
+      width:
+          double.infinity,
 
       padding:
-          const EdgeInsets.all(15),
+          const EdgeInsets.all(
+        20,
+      ),
 
-      decoration: BoxDecoration(
+      decoration:
+          BoxDecoration(
         color: Colors.white,
 
         borderRadius:
-            BorderRadius.circular(20),
+            BorderRadius.circular(
+          20,
+        ),
+
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black
+                .withOpacity(
+              0.04,
+            ),
+
+            blurRadius: 10,
+
+            offset:
+                const Offset(
+              0,
+              4,
+            ),
+          ),
+        ],
       ),
 
       child: Column(
         crossAxisAlignment:
-            CrossAxisAlignment.start,
+            CrossAxisAlignment
+                .start,
 
         children: [
           Text(
             title,
 
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 18,
 
               fontWeight:
@@ -596,7 +942,9 @@ class _ProfileScreenState
             ),
           ),
 
-          const SizedBox(height: 15),
+          const SizedBox(
+            height: 20,
+          ),
 
           child,
         ],
@@ -604,42 +952,50 @@ class _ProfileScreenState
     );
   }
 
-  Widget _achievement(
-    IconData icon,
-    String title,
+  // =========================
+  // RESUMO
+  // =========================
+
+  Widget _summaryItem(
+    String value,
+    String label,
+    Color color,
   ) {
-    return Container(
-      width: 120,
-
-      padding:
-          const EdgeInsets.all(15),
-
-      decoration: BoxDecoration(
-        color:
-            Colors.grey.shade100,
-
-        borderRadius:
-            BorderRadius.circular(15),
-      ),
+    return SizedBox(
+      width: 75,
 
       child: Column(
         children: [
-          Icon(
-            icon,
-            color:
-                AppColors.primary,
+          Text(
+            value,
+
+            style:
+                TextStyle(
+              fontSize: 24,
+
+              fontWeight:
+                  FontWeight.bold,
+
+              color: color,
+            ),
           ),
 
-          const SizedBox(height: 10),
+          const SizedBox(
+            height: 5,
+          ),
 
           Text(
-            title,
+            label,
 
             textAlign:
                 TextAlign.center,
 
-            style: const TextStyle(
+            style:
+                const TextStyle(
               fontSize: 12,
+
+              color:
+                  Colors.grey,
             ),
           ),
         ],

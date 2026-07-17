@@ -3,6 +3,7 @@ import '../../utils/app_colors.dart';
 import '../../services/api_service.dart';
 import '../home/home_screen.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -215,7 +216,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     Alignment.centerLeft,
 
                 child: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            const ForgotPasswordScreen(),
+                      ),
+                    );
+                  },
 
                   child: const Text(
                     'Esqueceu a palavra-passe?',
@@ -279,38 +288,55 @@ class _LoginScreenState extends State<LoginScreen> {
 
               const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+             Row(
+  mainAxisAlignment:
+      MainAxisAlignment.center,
 
-                children: [
-                  const Text(
-                    'Ainda não tem conta? ',
-                  ),
+  children: [
+    const Text(
+      'Ainda não tem conta? ',
+    ),
 
-                  GestureDetector(
-                    onTap: _isLoading
-                        ? null
-                        : () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const RegisterScreen(),
-                              ),
-                            );
-                          },
+    TextButton(
+      onPressed: _isLoading
+          ? null
+          : () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const RegisterScreen(),
+                ),
+              );
+            },
 
-                    child: const Text(
-                      'Criar conta',
-                      style: TextStyle(
-                        fontWeight:
-                            FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+      style: TextButton.styleFrom(
+        foregroundColor:
+            AppColors.primary,
+
+        padding:
+            const EdgeInsets.symmetric(
+          horizontal: 4,
+        ),
+
+        minimumSize: Size.zero,
+
+        tapTargetSize:
+            MaterialTapTargetSize
+                .shrinkWrap,
+      ),
+
+      child: const Text(
+        'Criar conta',
+
+        style: TextStyle(
+          fontWeight:
+              FontWeight.bold,
+        ),
+      ),
+    ),
+  ],
+),
 
               const SizedBox(height: 80),
 

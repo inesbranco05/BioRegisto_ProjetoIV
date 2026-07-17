@@ -10,10 +10,11 @@
 using System;
 using System.Reflection;
 
+[assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("f3b50ae7-cdd1-4841-9d39-d9c338749f0a")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+aa661412614909f0b3608d86d1569c404dfd2af7")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2e757560878166067ffd1daa08f3bb8ff88a395")]
 [assembly: System.Reflection.AssemblyProductAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

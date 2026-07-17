@@ -8,12 +8,71 @@ import '../observations/new_observation_screen.dart';
 import '../../services/api_service.dart';
 import '../auth/login_screen.dart';
 import '../notifications/notifications_screen.dart';
+import '../observations/observation_detail_screen.dart';
 
-class HomeScreen extends StatelessWidget {
-const HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
-@override
-Widget build(BuildContext context) {
+  @override
+  State<HomeScreen> createState() =>
+      _HomeScreenState();
+}
+
+class _HomeScreenState
+    extends State<HomeScreen> {
+  int _notificationCount = 0;
+  late Future<List<dynamic>>
+    _observationsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _checkNotifications();
+     _observationsFuture =
+      ApiService.getObservations();
+  }
+
+ Future<void> _checkNotifications() async {
+  try {
+    final notifications =
+        await ApiService.getNotifications();
+
+    if (!mounted) return;
+
+    final individualNotifications =
+        notifications.where(
+      (notification) {
+        final isGlobal =
+            notification['isGlobal'];
+
+        return isGlobal == false;
+      },
+    ).toList();
+
+    setState(() {
+      _notificationCount =
+          individualNotifications.length;
+    });
+  } catch (error) {
+    debugPrint(
+      'Erro ao carregar notificações: $error',
+    );
+  }
+}
+  @override
+  Widget build(BuildContext context) {
+    final profileImageUrl =
+    ApiService.currentUser?['profileImageUrl']
+        ?.toString();
+
+final fullProfileImageUrl =
+    profileImageUrl != null &&
+            profileImageUrl.isNotEmpty
+        ? profileImageUrl.startsWith('http')
+            ? profileImageUrl
+            : '${ApiService.baseUrl.replaceFirst('/api', '')}$profileImageUrl'
+        : null;
 return Scaffold(
 backgroundColor: AppColors.background,
 
@@ -21,21 +80,36 @@ drawer: Drawer(
   child: ListView(
     padding: EdgeInsets.zero,
     children: [
-
       UserAccountsDrawerHeader(
-       accountName: Text(
+        accountName: Text(
           ApiService.currentUser?['name'] ??
-            'Utilizador',
+              'Utilizador',
         ),
 
-        accountEmail: const Text(
-          "400 pontos",
+        accountEmail: Text(
+          ApiService.currentUser?['email'] ??
+              '',
         ),
 
-        currentAccountPicture:
-            const CircleAvatar(
-          child: Icon(Icons.person),
-        ),
+       currentAccountPicture: CircleAvatar(
+  backgroundColor: Colors.white,
+
+  backgroundImage:
+      fullProfileImageUrl != null
+          ? NetworkImage(
+              fullProfileImageUrl,
+            )
+          : null,
+
+  child:
+      fullProfileImageUrl == null
+          ? Icon(
+              Icons.person,
+              color: AppColors.primary,
+              size: 35,
+            )
+          : null,
+),
 
         decoration: BoxDecoration(
           color: AppColors.primary,
@@ -43,21 +117,30 @@ drawer: Drawer(
       ),
 
       ListTile(
-        leading: const Icon(Icons.home),
-        title: const Text("Início"),
+        leading:
+            const Icon(Icons.home),
+
+        title:
+            const Text('Início'),
+
         onTap: () {
           Navigator.pop(context);
         },
       ),
 
       ListTile(
-        leading: const Icon(Icons.map),
-        title: const Text("Mapa"),
+        leading:
+            const Icon(Icons.map),
+
+        title:
+            const Text('Mapa'),
+
         onTap: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const MapScreen(),
+              builder: (_) =>
+                  const MapScreen(),
             ),
           );
         },
@@ -67,9 +150,11 @@ drawer: Drawer(
         leading: const Icon(
           Icons.photo_camera,
         ),
+
         title: const Text(
-          "As minhas observações",
+          'As minhas observações',
         ),
+
         onTap: () {
           Navigator.push(
             context,
@@ -85,9 +170,11 @@ drawer: Drawer(
         leading: const Icon(
           Icons.emoji_events,
         ),
+
         title: const Text(
-          "Desafios",
+          'Desafios',
         ),
+
         onTap: () {
           Navigator.push(
             context,
@@ -100,33 +187,31 @@ drawer: Drawer(
       ),
 
       ListTile(
-        leading: const Icon(Icons.person),
-        title: const Text("Perfil"),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) =>
-                  const ProfileScreen(),
-            ),
-          );
-        },
-      ),
-
-      const Divider(),
-
-      ListTile(
-        leading: const Icon(Icons.settings),
-        title: const Text("Definições"),
-        onTap: () {},
-      ),
-
-      ListTile(
         leading: const Icon(
-          Icons.help_outline,
+          Icons.person,
         ),
-        title: const Text("Ajuda"),
-        onTap: () {},
+
+        title:
+            const Text('Perfil'),
+
+       onTap: () async {
+  // Fecha primeiro o side menu.
+  Navigator.pop(context);
+
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const ProfileScreen(),
+    ),
+  );
+
+  // Reconstrói a Home quando
+  // regressamos do Perfil.
+  if (!mounted) return;
+
+  setState(() {});
+},
       ),
 
       const Divider(),
@@ -138,7 +223,8 @@ drawer: Drawer(
         ),
 
         title: const Text(
-          "Terminar sessão",
+          'Terminar sessão',
+
           style: TextStyle(
             color: Colors.red,
           ),
@@ -147,7 +233,9 @@ drawer: Drawer(
         onTap: () async {
           await ApiService.logout();
 
-          if (!context.mounted) return;
+          if (!context.mounted) {
+            return;
+          }
 
           Navigator.pushAndRemoveUntil(
             context,
@@ -297,24 +385,79 @@ bottomNavigationBar: BottomAppBar(
                     ),
                   ),
 
-                 IconButton(
-                    tooltip: 'Notificações',
+Stack(
+  clipBehavior: Clip.none,
 
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      color: Colors.white,
-                    ),
+  children: [
+    IconButton(
+      tooltip: 'Notificações',
 
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const NotificationsScreen(),
-                        ),
-                      );
-                    },
-                  ),
+      onPressed: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                const NotificationsScreen(),
+          ),
+        );
+
+        if (!mounted) return;
+
+        setState(() {
+          _notificationCount = 0;
+        });
+      },
+
+      icon: const Icon(
+        Icons.notifications_none,
+        color: Colors.white,
+        size: 28,
+      ),
+    ),
+
+    if (_notificationCount > 0)
+      Positioned(
+        right: 2,
+        top: 2,
+
+        child: Container(
+          constraints:
+              const BoxConstraints(
+            minWidth: 18,
+            minHeight: 18,
+          ),
+
+          padding:
+              const EdgeInsets.symmetric(
+            horizontal: 5,
+          ),
+
+          decoration:
+              const BoxDecoration(
+            color: Colors.red,
+            shape: BoxShape.circle,
+          ),
+
+          alignment:
+              Alignment.center,
+
+          child: Text(
+            _notificationCount > 99
+                ? '99+'
+                : '$_notificationCount',
+
+            style:
+                const TextStyle(
+              color: Colors.white,
+              fontSize: 10,
+              fontWeight:
+                  FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+  ],
+),
                 ],
               ),
 
@@ -399,48 +542,188 @@ bottomNavigationBar: BottomAppBar(
           ),
         ),
 
-        // Observações recentes
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
+      // Observações recentes
+Padding(
+  padding: const EdgeInsets.symmetric(
+    horizontal: 20,
+  ),
+
+  child: Column(
+    crossAxisAlignment:
+        CrossAxisAlignment.start,
+
+    children: [
+      Row(
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
+
+        children: [
+          const Text(
+            'Observações Recentes',
+
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight:
+                  FontWeight.bold,
+            ),
           ),
 
-          child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const MyObservationsScreen(),
+                ),
+              );
+            },
 
-            children: [
+            child: Text(
+              'Ver todas',
 
-              const Text(
-                "Observações Recentes",
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
+              style: TextStyle(
+                color:
+                    AppColors.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+
+      const SizedBox(
+        height: 10,
+      ),
+
+      FutureBuilder<List<dynamic>>(
+        future:
+            _observationsFuture,
+
+        builder: (
+          context,
+          snapshot,
+        ) {
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
+            return Padding(
+              padding:
+                  const EdgeInsets.all(
+                25,
+              ),
+
+              child: Center(
+                child:
+                    CircularProgressIndicator(
+                  color:
+                      AppColors.primary,
+                ),
+              ),
+            );
+          }
+
+          if (snapshot.hasError) {
+            return const Padding(
+              padding:
+                  EdgeInsets.symmetric(
+                vertical: 20,
+              ),
+
+              child: Text(
+                'Não foi possível carregar as observações recentes.',
+              ),
+            );
+          }
+
+          final observations =
+              snapshot.data ?? [];
+
+          if (observations.isEmpty) {
+            return Container(
+              width:
+                  double.infinity,
+
+              padding:
+                  const EdgeInsets.all(
+                25,
+              ),
+
+              decoration:
+                  BoxDecoration(
+                color: Colors.white,
+
+                borderRadius:
+                    BorderRadius.circular(
+                  20,
                 ),
               ),
 
-              const SizedBox(height: 15),
+              child: const Column(
+                children: [
+                  Icon(
+                    Icons
+                        .photo_camera_outlined,
 
-              _observationCard(
-                "Pardal-comum",
-                "Aprovada",
-                Icons.check_circle,
-                Colors.green,
+                    size: 40,
+
+                    color:
+                        Colors.grey,
+                  ),
+
+                  SizedBox(
+                    height: 10,
+                  ),
+
+                  Text(
+                    'Ainda não tem observações registadas.',
+
+                    textAlign:
+                        TextAlign.center,
+
+                    style: TextStyle(
+                      color:
+                          Colors.grey,
+                    ),
+                  ),
+                ],
               ),
+            );
+          }
 
-              const SizedBox(height: 10),
+          // A API já devolve por
+          // CreatedAt descendente.
+          final recentObservations =
+              observations
+                  .take(3)
+                  .toList();
 
-              _observationCard(
-                "Espécie desconhecida",
-                "Pendente",
-                Icons.access_time,
-                Colors.orange,
-              ),
+          return Column(
+            children:
+                recentObservations
+                    .map(
+              (observation) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.only(
+                    bottom: 10,
+                  ),
 
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
+                  child:
+                      _observationCard(
+                    observation,
+                  ),
+                );
+              },
+            ).toList(),
+          );
+        },
+      ),
+
+      const SizedBox(
+        height: 30,
+      ),
+    ],
+  ),
+),
       ],
     ),
   ),
@@ -456,14 +739,21 @@ Widget _menuCard(
   Widget screen,
 ) {
   return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => screen,
-        ),
-      );
-    },
+ onTap: () async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => screen,
+    ),
+  );
+
+  if (!mounted) return;
+
+  setState(() {
+    _observationsFuture =
+        ApiService.getObservations();
+  });
+},
 
     child: Container(
       padding: const EdgeInsets.all(20),
@@ -511,15 +801,18 @@ Widget _navItem(
   Widget screen,
 ) {
   return GestureDetector(
-    onTap: () {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => screen,
-        ),
-      );
-    },
+    onTap: () async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => screen,
+    ),
+  );
 
+  if (!mounted) return;
+
+  setState(() {});
+},
     child: Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -544,84 +837,251 @@ Widget _navItem(
 }
 
 Widget _observationCard(
-String species,
-String status,
-IconData icon,
-Color statusColor,
+  dynamic observation,
 ) {
-return Container(
-padding: const EdgeInsets.all(16),
+  final species =
+      observation['commonName']
+                  ?.toString()
+                  .trim()
+                  .isNotEmpty ==
+              true
+          ? observation['commonName']
+              .toString()
+          : observation['scientificName']
+                  ?.toString() ??
+              'Espécie desconhecida';
 
-  decoration: BoxDecoration(
+  final status =
+      observation['status']
+              ?.toString()
+              .toLowerCase() ??
+          'pending';
+
+  // Preparar URL da fotografia
+  final imageUrl =
+      observation['imageUrl']
+          ?.toString();
+
+  final fullImageUrl =
+      imageUrl != null &&
+              imageUrl.isNotEmpty
+          ? imageUrl.startsWith(
+              'http',
+            )
+              ? imageUrl
+              : '${ApiService.baseUrl.replaceFirst('/api', '')}$imageUrl'
+          : null;
+
+  String statusText;
+  IconData statusIcon;
+  Color statusColor;
+
+  if (status == 'validated') {
+    statusText = 'Validada';
+    statusIcon =
+        Icons.check_circle;
+    statusColor =
+        Colors.green;
+  } else if (
+      status == 'rejected') {
+    statusText = 'Rejeitada';
+    statusIcon =
+        Icons.cancel;
+    statusColor =
+        Colors.red;
+  } else {
+    statusText = 'Pendente';
+    statusIcon =
+        Icons.access_time;
+    statusColor =
+        Colors.orange;
+  }
+
+  return Material(
     color: Colors.white,
+
     borderRadius:
-        BorderRadius.circular(20),
+        BorderRadius.circular(
+      20,
+    ),
 
-    boxShadow: [
-      BoxShadow(
-        color:
-            Colors.black.withOpacity(0.05),
-        blurRadius: 10,
-        offset: const Offset(0, 4),
-      ),
-    ],
-  ),
-
-  child: Row(
-    children: [
-
-      Container(
-        width: 55,
-        height: 55,
-
-        decoration: BoxDecoration(
-          color: AppColors.cardGreen,
-          borderRadius:
-              BorderRadius.circular(15),
-        ),
-
-        child: const Icon(
-          Icons.photo_camera,
-          color: Colors.white,
-        ),
+    child: InkWell(
+      borderRadius:
+          BorderRadius.circular(
+        20,
       ),
 
-      const SizedBox(width: 15),
-
-      Expanded(
-        child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
-
-          children: [
-
-            Text(
-              species,
-              style: const TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                fontSize: 16,
-              ),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ObservationDetailScreen(
+              observation:
+                  observation,
             ),
+          ),
+        );
+      },
 
-            const SizedBox(height: 5),
+      child: Container(
+        padding:
+            const EdgeInsets.all(
+          16,
+        ),
 
-            Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
+        decoration:
+            BoxDecoration(
+          borderRadius:
+              BorderRadius.circular(
+            20,
+          ),
+
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black
+                  .withOpacity(
+                0.05,
+              ),
+
+              blurRadius: 10,
+
+              offset:
+                  const Offset(
+                0,
+                4,
               ),
             ),
           ],
         ),
-      ),
 
-      Icon(
-        icon,
-        color: statusColor,
+        child: Row(
+          children: [
+            // FOTOGRAFIA
+            ClipRRect(
+              borderRadius:
+                  BorderRadius.circular(
+                15,
+              ),
+
+              child: Container(
+                width: 55,
+                height: 55,
+
+                color:
+                    AppColors.cardGreen,
+
+                child:
+                    fullImageUrl != null
+                        ? Image.network(
+                            fullImageUrl,
+
+                            fit:
+                                BoxFit.cover,
+
+                            errorBuilder: (
+                              context,
+                              error,
+                              stackTrace,
+                            ) {
+                              return const Icon(
+                                Icons
+                                    .broken_image_outlined,
+
+                                color:
+                                    Colors.white,
+                              );
+                            },
+                          )
+                        : const Icon(
+                            Icons
+                                .photo_camera,
+
+                            color:
+                                Colors.white,
+                          ),
+              ),
+            ),
+
+            const SizedBox(
+              width: 15,
+            ),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment
+                        .start,
+
+                children: [
+                  Text(
+                    species,
+
+                    maxLines: 1,
+
+                    overflow:
+                        TextOverflow
+                            .ellipsis,
+
+                    style:
+                        const TextStyle(
+                      fontWeight:
+                          FontWeight
+                              .bold,
+
+                      fontSize: 16,
+                    ),
+                  ),
+
+                  const SizedBox(
+                    height: 5,
+                  ),
+
+                  Row(
+                    children: [
+                      Icon(
+                        statusIcon,
+
+                        size: 16,
+
+                        color:
+                            statusColor,
+                      ),
+
+                      const SizedBox(
+                        width: 5,
+                      ),
+
+                      Text(
+                        statusText,
+
+                        style:
+                            TextStyle(
+                          color:
+                              statusColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(
+              width: 8,
+            ),
+
+            Icon(
+              Icons.chevron_right,
+
+              color:
+                  Colors.grey.shade400,
+            ),
+          ],
+        ),
       ),
-    ],
-  ),
-);
+    ),
+  );
 }
+
 }

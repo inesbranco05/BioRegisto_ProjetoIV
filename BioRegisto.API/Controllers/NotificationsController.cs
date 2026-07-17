@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BioRegisto.API.Data;
 using BioRegisto.API.DTOs;
 using BioRegisto.API.Models;
+using System.Security.Claims;
 
 namespace BioRegisto.API.Controllers;
 
@@ -21,27 +22,57 @@ public class NotificationsController : ControllerBase
     }
 
     // GET api/Notifications
-    // Todos os utilizadores autenticados
-    // podem consultar notificações globais.
-    [HttpGet]
-    public async Task<IActionResult> GetAll()
-    {
-        var notifications =
-            await _context.Notifications
-                .OrderByDescending(
-                    n => n.CreatedAt
-                )
-                .Select(n => new
-                {
-                    n.Id,
-                    n.Title,
-                    n.Message,
-                    n.CreatedAt
-                })
-                .ToListAsync();
+// Devolve notificações globais
+// + notificações individuais do utilizador autenticado.
+[HttpGet]
+public async Task<IActionResult> GetAll()
+{
+    var userIdClaim =
+        User.FindFirstValue(
+            ClaimTypes.NameIdentifier
+        );
 
-        return Ok(notifications);
+    if (!int.TryParse(
+        userIdClaim,
+        out var userId))
+    {
+        return Unauthorized();
     }
+
+    var notifications =
+        await _context.Notifications
+
+            // Global:
+            // UserId == null
+            //
+            // Individual:
+            // UserId == utilizador autenticado
+            .Where(n =>
+                n.UserId == null ||
+                n.UserId == userId
+            )
+
+            .OrderByDescending(
+                n => n.CreatedAt
+            )
+
+            .Select(n => new
+            {
+                n.Id,
+                n.Title,
+                n.Message,
+                n.CreatedAt,
+
+                // Pode ser útil no mobile
+                // para distinguir os dois tipos.
+                IsGlobal =
+                    n.UserId == null
+            })
+
+            .ToListAsync();
+
+    return Ok(notifications);
+}
 
     // POST api/Notifications
     // Apenas administradores podem

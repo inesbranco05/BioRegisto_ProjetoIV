@@ -24,7 +24,6 @@ class _RegisterScreenState
   final _confirmPasswordController =
       TextEditingController();
 
-  bool _acceptedTerms = false;
   bool _isLoading = false;
 
   @override
@@ -75,15 +74,6 @@ class _RegisterScreenState
     if (password.length < 6) {
       _showMessage(
         'A palavra-passe deve ter pelo menos 6 caracteres.',
-      );
-
-      return;
-    }
-
-    // Validar termos
-    if (!_acceptedTerms) {
-      _showMessage(
-        'Deve aceitar os termos e condições.',
       );
 
       return;
@@ -300,37 +290,6 @@ class _RegisterScreenState
                   ),
                 ),
               ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // TERMOS E CONDIÇÕES
-            Row(
-              children: [
-                Checkbox(
-                  value:
-                      _acceptedTerms,
-
-                  activeColor:
-                      AppColors.primary,
-
-                  onChanged: _isLoading
-                      ? null
-                      : (value) {
-                          setState(() {
-                            _acceptedTerms =
-                                value ??
-                                    false;
-                          });
-                        },
-                ),
-
-                const Expanded(
-                  child: Text(
-                    'Concordo com os termos e condições e política de privacidade',
-                  ),
-                ),
-              ],
             ),
 
             const SizedBox(height: 20),

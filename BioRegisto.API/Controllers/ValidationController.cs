@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using BioRegisto.API.Data;
 using BioRegisto.API.DTOs;
 using System.Security.Claims;
+using BioRegisto.API.Models;
 
 namespace BioRegisto.API.Controllers;
 
@@ -120,6 +121,26 @@ public class ValidationController : ControllerBase
         observation.RejectionReason =
             null;
 
+var notification =
+    new Notification
+    {
+        Title =
+            "Observação validada",
+
+        Message =
+            $"A sua observação de {observation.CommonName} foi validada com sucesso.",
+
+        UserId =
+            observation.UserId,
+
+        CreatedAt =
+            DateTime.UtcNow
+    };
+
+_context.Notifications.Add(
+    notification
+);
+
         await _context.SaveChangesAsync();
 
         return Ok(new
@@ -193,6 +214,26 @@ public class ValidationController : ControllerBase
 
         observation.ValidatedAt =
             DateTime.UtcNow;
+
+var notification =
+    new Notification
+    {
+        Title =
+            "Observação rejeitada",
+
+        Message =
+            $"A sua observação de {observation.CommonName} foi rejeitada. Motivo: {observation.RejectionReason}",
+
+        UserId =
+            observation.UserId,
+
+        CreatedAt =
+            DateTime.UtcNow
+    };
+
+_context.Notifications.Add(
+    notification
+);
 
         await _context.SaveChangesAsync();
 

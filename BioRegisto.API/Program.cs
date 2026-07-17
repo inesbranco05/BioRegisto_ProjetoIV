@@ -3,6 +3,7 @@ using BioRegisto.API.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using BioRegisto.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +71,7 @@ builder.Services
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<EmailService>();
 
 var app = builder.Build();
 

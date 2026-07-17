@@ -157,19 +157,23 @@ class _ValidatorDashboardState
                         Icons.chevron_right,
                       ),
 
-                      onTap: () {
-                        Navigator.pop(
-                          dialogContext,
-                        );
+           onTap: () async {
+  Navigator.pop(
+    dialogContext,
+  );
 
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                const PendingObservationsScreen(),
-                          ),
-                        );
-                      },
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const PendingObservationsScreen(),
+    ),
+  );
+
+  if (!mounted) return;
+
+  await _refreshStats();
+},
                     );
                   },
                 ),
@@ -190,19 +194,23 @@ class _ValidatorDashboardState
 
           if (observations.isNotEmpty)
             ElevatedButton(
-              onPressed: () {
-                Navigator.pop(
-                  dialogContext,
-                );
+    onPressed: () async {
+  Navigator.pop(
+    dialogContext,
+  );
 
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        const PendingObservationsScreen(),
-                  ),
-                );
-              },
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const PendingObservationsScreen(),
+    ),
+  );
+
+  if (!mounted) return;
+
+  await _refreshStats();
+},
 
               child: const Text(
                 'Ver todas',
@@ -277,15 +285,19 @@ class _ValidatorDashboardState
                   'Observações pendentes',
                   false,
 
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            const PendingObservationsScreen(),
-                      ),
-                    );
-                  },
+                 onTap: () async {
+  await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) =>
+          const PendingObservationsScreen(),
+    ),
+  );
+
+  if (!mounted) return;
+
+  await _refreshStats();
+},
                 ),
 
                 _menuItem(

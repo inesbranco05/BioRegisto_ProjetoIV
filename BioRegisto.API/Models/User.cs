@@ -8,6 +8,8 @@ public class User
 
     public string Email { get; set; } = string.Empty;
 
+    public string? ProfileImageUrl { get; set; }
+
     public string PasswordHash { get; set; } = string.Empty;
 
     public string Role { get; set; } = "Observer";
@@ -17,4 +19,9 @@ public class User
     public List<Observation> Observations { get; set; } = new();
 
     public bool IsActive { get; set; } = true;
+
+    public string? PasswordResetCode { get; set; }
+
+    public DateTime? PasswordResetCodeExpiresAt { get; set; }
+
 }

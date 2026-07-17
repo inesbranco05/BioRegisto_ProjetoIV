@@ -290,4 +290,253 @@ class ApiService {
     'Erro ao carregar notificações.',
   );
 }
+
+// =========================
+  // EVENTOS E DESAFIOS
+  // =========================
+
+static Future<List<dynamic>>
+    getEventChallenges() async {
+  final response = await http.get(
+    Uri.parse(
+      '$baseUrl/EventChallenges',
+    ),
+    headers: {
+      'Authorization':
+          'Bearer $authToken',
+    },
+  );
+
+  if (response.statusCode == 200) {
+    return jsonDecode(response.body);
+  }
+
+  throw Exception(
+    'Erro ao carregar eventos e desafios.',
+  );
+}
+// =========================
+// ATUALIZAR PERFIL
+// =========================
+
+static Future<Map<String, dynamic>>
+    updateProfile({
+  required String name,
+  required String email,
+}) async {
+  try {
+    final response =
+        await http.put(
+      Uri.parse(
+        '$baseUrl/Auth/profile',
+      ),
+
+      headers: {
+        'Content-Type':
+            'application/json',
+
+        'Authorization':
+            'Bearer $authToken',
+      },
+
+      body: jsonEncode({
+        'name': name,
+        'email': email,
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      // Atualizar os dados
+      // guardados na sessão.
+      currentUser = Map<String, dynamic>
+          .from(data);
+
+      return {
+        'success': true,
+        'user': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível atualizar o perfil.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Erro de ligação ao servidor.',
+    };
+  }
+}
+
+// =========================
+// FOTO PERFIL
+// =========================
+
+static Future<Map<String, dynamic>>
+    updateProfileImage({
+  required Uint8List imageBytes,
+  required String imageName,
+}) async {
+  try {
+    final request = http.MultipartRequest(
+      'PUT',
+      Uri.parse(
+        '$baseUrl/Auth/profile/image',
+      ),
+    );
+
+    request.headers['Authorization'] =
+        'Bearer $authToken';
+
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'image',
+        imageBytes,
+        filename: imageName,
+      ),
+    );
+
+    final streamedResponse =
+        await request.send();
+
+    final response =
+        await http.Response.fromStream(
+      streamedResponse,
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      currentUser =
+          Map<String, dynamic>.from(
+        data,
+      );
+
+      return {
+        'success': true,
+        'user': data,
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível atualizar a fotografia.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Erro de ligação ao servidor.',
+    };
+  }
+}
+// =========================
+// RECUPERAR PALAVRA-PASSE
+// =========================
+
+static Future<Map<String, dynamic>>
+    forgotPassword({
+  required String email,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '$baseUrl/Auth/forgot-password',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+      },
+      body: jsonEncode({
+        'email': email.trim(),
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'message': data['message'],
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível enviar o código.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Erro de ligação ao servidor.',
+    };
+  }
+}
+
+// =========================
+// REDEFINIR PALAVRA-PASSE
+// =========================
+
+static Future<Map<String, dynamic>>
+    resetPassword({
+  required String email,
+  required String code,
+  required String newPassword,
+}) async {
+  try {
+    final response = await http.post(
+      Uri.parse(
+        '$baseUrl/Auth/reset-password',
+      ),
+      headers: {
+        'Content-Type':
+            'application/json',
+      },
+      body: jsonEncode({
+        'email': email.trim(),
+        'code': code.trim(),
+        'newPassword': newPassword,
+      }),
+    );
+
+    final data =
+        jsonDecode(response.body);
+
+    if (response.statusCode == 200) {
+      return {
+        'success': true,
+        'message':
+            data['message'] ??
+                'Palavra-passe alterada com sucesso.',
+      };
+    }
+
+    return {
+      'success': false,
+      'message':
+          data['message'] ??
+              'Não foi possível alterar a palavra-passe.',
+    };
+  } catch (error) {
+    return {
+      'success': false,
+      'message':
+          'Erro de ligação ao servidor.',
+    };
+  }
+}
 }
