@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f2e757560878166067ffd1daa08f3bb8ff88a395")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+22a9b1c7dcc7803e1ed48ced72fc939c38ba0839")]
 [assembly: System.Reflection.AssemblyProductAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyTitleAttribute("BioRegisto.API")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
